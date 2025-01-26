@@ -17,7 +17,9 @@ class HttpRequestInterceptor implements InterceptorContract {
     try{
       request.headers["Content-Type"] = !_isJsonStr(request.body) && _isKeyValueQuery(request.body) ? "application/x-www-form-urlencoded" : "application/json";
       request = await naiveInterceptRequest(dataObj: requestData);
-    }catch(e, stackTrace) {}
+    }catch(e) {
+      print("Exception Caught! $e");
+    }
     return request;
   }
 

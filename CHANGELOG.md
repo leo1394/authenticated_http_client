@@ -1,3 +1,6 @@
+## 0.1.2
+- tiny code optimization
+
 ## 0.1.1
 - Upgrade dependencies like `http` `http_interceptor`
 

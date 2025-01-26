@@ -3,11 +3,11 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http_interceptor/http_interceptor.dart';
+import 'package:universal_io/io.dart';
 import 'http_error.dart';
 import 'http_request_interceptor.dart';
 import 'http_headers_interceptor.dart';
