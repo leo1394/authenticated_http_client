@@ -145,7 +145,7 @@ class AuthenticatedHttpClient {
         // allow Map parameters in default Map<dynamic, dynamic>
         Map<String, dynamic>? paramsUnnamedFormatted = (paramsUnnamed == null || paramsUnnamed.isEmpty)? <String, dynamic>{} : paramsUnnamed.map((key, value) => MapEntry(key.toString(), value));
         Map<String, dynamic>? paramsFormatted = (params == null || params.isEmpty) ? <String, dynamic>{}  : params.map((key, value) => MapEntry(key.toString(), value));
-        return _send(method, uu, headers: headers, params: paramsUnnamedFormatted ?? paramsFormatted, encoding: encoding, formFields: formFields, timeoutInSecs: timeoutInSecs, silent: silent);
+        return _send(method, uu, headers: headers, params: paramsUnnamedFormatted, encoding: encoding, formFields: formFields, timeoutInSecs: timeoutInSecs, silent: silent);
       }
       requestFncs[requestName] = fnc;
     });
@@ -357,7 +357,7 @@ class AuthenticatedHttpClient {
       namedArguments[const Symbol("params")] = params;
       namedArguments[const Symbol("formFields")] = formFields;
     }
-    return Function.apply(requestFnc, [url], namedArguments).timeout(Duration(seconds: timeoutInSecs ?? _requestTimeout ?? 45)).then((response) async {
+    return Function.apply(requestFnc, [url], namedArguments).timeout(Duration(seconds: timeoutInSecs ?? _requestTimeout)).then((response) async {
       // http response statusCode == 200
       // utf-8 support: https://pub.dev/documentation/http/latest/
       // for read/readbytes method directly return Uint8List

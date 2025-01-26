@@ -1,9 +1,9 @@
 // Copyright (c) 2025, the Dart project authors. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as Math;
-import 'package:http/http.dart';
 import 'package:http_interceptor/http_interceptor.dart';
 import 'http_error.dart';
 import 'router_helper.dart';
@@ -12,21 +12,21 @@ class HttpRequestInterceptor implements InterceptorContract {
   bool silent = false;
 
   @override
-  Future<RequestData> interceptRequest({required RequestData data}) async {
-    RequestData request = data;
+  FutureOr<BaseRequest> interceptRequest({required BaseRequest request}) async {
+    Request requestData = request as Request;
     try{
       request.headers["Content-Type"] = !_isJsonStr(request.body) && _isKeyValueQuery(request.body) ? "application/x-www-form-urlencoded" : "application/json";
-      request = await naiveInterceptRequest(dataObj: request);
+      request = await naiveInterceptRequest(dataObj: requestData);
     }catch(e, stackTrace) {}
     return request;
   }
 
   @override
-  Future<ResponseData> interceptResponse({required ResponseData data}) async {
-    return naiveInterceptResponse(dataObj: data);
+  FutureOr<BaseResponse> interceptResponse({required BaseResponse response}) async {
+    return naiveInterceptResponse(responseObj: response);
   }
 
-  Future<dynamic> naiveInterceptRequest({BaseRequest? requestObj, RequestData? dataObj}) async {
+  Future<dynamic> naiveInterceptRequest({BaseRequest? requestObj, Request? dataObj}) async {
     dynamic request = requestObj ?? dataObj;
     // symbol silent == true means no underMaintenance and unauthorized login implied by response
     silent = request.headers["_SILENT_"] != null && request.headers["_SILENT_"] == "true";
@@ -36,13 +36,13 @@ class HttpRequestInterceptor implements InterceptorContract {
     return request;
   }
 
-  dynamic naiveInterceptResponse({BaseResponse? responseObj, ResponseData? dataObj}) {
+  dynamic naiveInterceptResponse({BaseResponse? responseObj, Response? dataObj}) {
     // statusCode 200 401 .etc
     dynamic response = responseObj ?? dataObj;
     try{
       // read/readBytes method directly return response
       utf8.decode(response.bodyBytes);
-    }catch(e, stackTrace) {
+    }catch(e) {
       return response;
     }
 
@@ -91,6 +91,16 @@ class HttpRequestInterceptor implements InterceptorContract {
         return false;
       }
     }
+    return true;
+  }
+
+  @override
+  FutureOr<bool> shouldInterceptRequest() {
+    return true;
+  }
+
+  @override
+  FutureOr<bool> shouldInterceptResponse() {
     return true;
   }
 }

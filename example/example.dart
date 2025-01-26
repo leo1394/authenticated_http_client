@@ -36,7 +36,7 @@ void main() {
   AuthenticatedHttpClient.getInstance().init("https://api.company.com", customHttpHeadersInterceptor: CustomHttpHeadersInterceptor());
 
   var apiService = AuthenticatedHttpClient.getInstance().factory({
-    "login"                : "POST /api/sign-in",
+    "login"                 : "POST /api/sign-in",
     "requestName"           : "POST /api/submit/plan",
     "requestNameWithParams" : "GET /api/plan/:id/details", // or "GET /api/plan/{id}/details"
     "mockRequest"           : "MOCK POST /api/task/config", // mock from _post_api_task_config.json under mockDirectory /lib/mock

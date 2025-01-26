@@ -22,18 +22,20 @@ class MapDot {
     if (invocation.isMethod) {
       if (value is Function) {
         // hack for authenticated_http_client's ajax fnc allow no arguments call and first argument is null, this argument is not a named one
-        final arguments = invocation.positionalArguments.isNotEmpty ? invocation.positionalArguments : [null];
-        final namedArguments = invocation.namedArguments ;
-        try{
+        final arguments = invocation.positionalArguments.isNotEmpty
+            ? invocation.positionalArguments
+            : [null];
+        final namedArguments = invocation.namedArguments;
+        try {
           return Function.apply(value, arguments, namedArguments);
-        }catch(e, stackTrace) {
+        } catch (e, stackTrace) {
           print("[MapDot] failed in Function.apply ... $e \n $stackTrace");
           throw ArgumentError("[MapDot] failed in $key Function.apply ... ");
         }
       } else {
         throw ArgumentError("$key is not a function.");
       }
-    }else if (invocation.isGetter) {
+    } else if (invocation.isGetter) {
       return _data[key];
     } else if (invocation.isSetter) {
       _data[key] = invocation.positionalArguments[0];
@@ -43,7 +45,8 @@ class MapDot {
   }
 
   String _getKeyName(Symbol symbol) {
-    final key = symbol.toString().replaceFirst('Symbol("', '').replaceFirst('")', '');
+    final key =
+        symbol.toString().replaceFirst('Symbol("', '').replaceFirst('")', '');
     return key;
   }
 }

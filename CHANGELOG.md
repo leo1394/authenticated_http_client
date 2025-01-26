@@ -1,3 +1,6 @@
+## 0.1.1
+- Upgrade dependencies like `http` `http_interceptor`
+
 ## 0.1.0
 - Feature #1: Support `factory` `silent` `mock` for Authenticated Http Client
 - Feature #2: Support api resolve of request URI definitions in WYSIWYG style
