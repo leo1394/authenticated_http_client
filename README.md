@@ -2,11 +2,10 @@
 ## authenticated_http_client
 [![pub package](https://img.shields.io/pub/v/authenticated_http_client.svg)](https://pub.dev/packages/authenticated_http_client)
 [![pub points](https://img.shields.io/pub/points/authenticated_http_client?color=2E8B57&label=pub%20points)](https://pub.dev/packages/authenticated_http_client/score)
-[![Coverage Status](https://github.com/leo1394/authenticated_http_client/badge.svg?branch=master)](https://coveralls.io/github/leo1394/authenticated_http_client?branch=master)
 [![GitHub Issues](https://img.shields.io/github/issues/leo1394/authenticated_http_client.svg?branch=master)](https://github.com/leo1394/authenticated_http_client/issues)
 [![GitHub Forks](https://img.shields.io/github/forks/leo1394/authenticated_http_client.svg?branch=master)](https://github.com/leo1394/authenticated_http_client/network)
 [![GitHub Stars](https://img.shields.io/github/stars/leo1394/authenticated_http_client.svg?branch=master)](https://github.com/leo1394/authenticated_http_client/stargazers)
-[![GitHub License](https://img.shields.io/badge/license-Apache%202-blue.svg)](https://raw.githubusercontent.com/leo1394/authenticated_http_client/master/LICENSE)
+[![GitHub License](https://img.shields.io/badge/license-MIT%20-blue.svg)](https://raw.githubusercontent.com/leo1394/authenticated_http_client/master/LICENSE)
 
 An advanced authenticated HTTP client introduces a `factory` feature that generates request futures based on API definitions in a WYSIWYG style, 
 with additional supports for `mock` and `silent` modes during development.
@@ -20,7 +19,7 @@ with additional supports for `mock` and `silent` modes during development.
 
 | Android | iOS | MacOS | Web | Linux | Windows |
 | :-----: | :-: | :---: |:---:| :---: | :-----: |
-|   ✅    | ✅  |  ✅   |  x  |  ✅   |   ✅    |
+|   ✅    | ✅  |  ✅   |  ❌️  |  ✅   |   ✅    |
 
 ## Requirements
 
