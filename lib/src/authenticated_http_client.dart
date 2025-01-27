@@ -1,5 +1,5 @@
 // Copyright (c) 2025, the Dart project authors. Use of this source code
-// is governed by a BSD-style license that can be found in the LICENSE file.
+// is governed by a MIT license that can be found in the LICENSE file.
 
 import 'dart:async';
 import 'dart:convert';
@@ -144,7 +144,7 @@ class AuthenticatedHttpClient {
         }
         // allow Map parameters in default Map<dynamic, dynamic>
         Map<String, dynamic>? paramsUnnamedFormatted = (paramsUnnamed == null || paramsUnnamed.isEmpty)? <String, dynamic>{} : paramsUnnamed.map((key, value) => MapEntry(key.toString(), value));
-        Map<String, dynamic>? paramsFormatted = (params == null || params.isEmpty) ? <String, dynamic>{}  : params.map((key, value) => MapEntry(key.toString(), value));
+        // Map<String, dynamic>? paramsFormatted = (params == null || params.isEmpty) ? <String, dynamic>{}  : params.map((key, value) => MapEntry(key.toString(), value));
         return _send(method, uu, headers: headers, params: paramsUnnamedFormatted, encoding: encoding, formFields: formFields, timeoutInSecs: timeoutInSecs, silent: silent);
       }
       requestFncs[requestName] = fnc;
@@ -188,7 +188,9 @@ class AuthenticatedHttpClient {
       }).catchError((e, stackTrace) {
         try{
           anyErrorCallback != null ? anyErrorCallback(e, stackTrace) : null;
-        }catch(e) { }
+        }catch(e) {
+          print("Exception Caught! $e");
+        }
       }).whenComplete(() {
         taskCompleted ++ ;
         if (anyCompleteCallback != null) {

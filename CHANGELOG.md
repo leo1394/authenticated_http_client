@@ -1,3 +1,6 @@
+## 0.1.3
+- LICENSE README files optimization
+
 ## 0.1.2
 - tiny code optimization
 

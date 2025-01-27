@@ -3,28 +3,16 @@ import 'package:authenticated_http_client/http_headers_interceptor.dart';
 import 'package:authenticated_http_client/router_helper.dart';
 
 class Constants {
-  static const bool isDeBug = true;
   static String appVersion = "1.0.1";
-  static String appBuildNumber = "1394";
   static String systemCode = "f08511c8-3b1c-4008-abba-045787f0b6c0";
-  static String deviceMode = "Apple iPhone 15";
-  static String channel = "Apple Store";
-  static String os = "ios";
-  static String osVersion = "18.0.2";
   static String udid = "357292741221214";
-  static String language = "zh_CN";
 }
 
 class CustomHttpHeadersInterceptor extends HttpHeadersInterceptor {
   @override
   Map<String, String> headersInterceptor(Map<String, String> headers) {
-    headers["device"] = Constants.deviceMode;
-    headers["os"] = Constants.os;
-    headers["os-version"] = Constants.osVersion;
     headers["udid"] = Constants.udid;
-    headers["channel"] = Constants.channel;
     headers["version"] = Constants.appVersion;
-    headers["lang"] = Constants.language;
     headers["system-code"] = Constants.systemCode;
     return headers;
   }
