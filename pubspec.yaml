@@ -23,5 +23,5 @@ topics:
   - auth-http-client
   - http-interceptor
   - http-client
-  - mock response
+  - mock-response
   - http-request
