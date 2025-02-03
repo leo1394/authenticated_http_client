@@ -1,6 +1,9 @@
+## 0.1.6
+- README tuned
+
 ## 0.1.5
 - README tuned
-- 
+ 
 ## 0.1.4
 - README tuned
 

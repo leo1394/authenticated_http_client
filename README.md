@@ -58,7 +58,7 @@ flutter pub add authenticated_http_client
     apiService.requestNameWithBraceParams({"id": 9527}).then((response) {/* success */}).catchError((e, stackTrace){ /* fail */ }).whenComplete((){ /* finally */ });
 ```
 
-- Mock requests are served from JSON files in the mockDirectory (defaulting to /lib/mock), which can be configured via AuthenticatedHttpClient.getInstance().init().
+- Mock requests are served from JSON files in the mockDirectory (defaulting to /lib/mock), which can be configured via AuthenticatedHttpClient.getInstance().init() and need to be declared under assets section in pubspec.yaml.
 ```dart
     var apiService = AuthenticatedHttpClient.getInstance().factory({
         "mockRequest"           : "MOCK POST /api/task/config", 
