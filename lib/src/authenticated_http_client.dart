@@ -33,6 +33,7 @@ import 'map_dot.dart';
 class AuthenticatedHttpClient {
   static const String _authTokenCacheKey = "-cached-authorization";
   static String baseUrl = "";
+  static String _host = "";
   static int _requestTimeout = 45; // timeout for http request in seconds
   Function? _responseHandler;
   String? _mockDirectory;  // mock data directory
@@ -82,7 +83,9 @@ class AuthenticatedHttpClient {
 
     if (url.isEmpty || url == baseUrl) {return ;}
     print("in AuthenticatedHttpClient base change to $url ...");
-    baseUrl = url.replaceAll(RegExp(r'\/$'), "");
+    url = url.replaceAll(RegExp(r'\/$'), "");
+    baseUrl = url.startsWith('http://') || url.startsWith('https://') ? url : Uri.https(url).origin;
+    _host = Uri.parse(baseUrl).host;
     List<InterceptorContract?> interceptors = [customHttpHeadersInterceptor, HttpRequestInterceptor()];
     _inner = InterceptedClient.build(interceptors: interceptors.where((inp) => inp != null).cast<InterceptorContract>().toList());
     _requestTimeout = timeoutInSecs ?? _requestTimeout;
@@ -139,7 +142,7 @@ class AuthenticatedHttpClient {
           String filename = "_${method}_${uu.replaceAll("/", "_").replaceAll(RegExp(r'[{:}]'), "")}";
           String filepath = [_mockDirectory, "$filename.json"].join("/");
           final response = await _readJsonFile(filepath);
-          print("in interceptRequest ==> ${baseUrl.startsWith("http://") ? Uri.http(baseUrl, uu) : Uri.https(baseUrl, uu)}, $params $paramsUnnamed \t MOCK response from local json file: $filepath, response ==> $response");
+          print("in interceptRequest ==> $baseUrl$uu, $params $paramsUnnamed \t MOCK response from local json file: $filepath, response ==> $response");
           return response;
         }
         // allow Map parameters in default Map<dynamic, dynamic>
@@ -330,14 +333,14 @@ class AuthenticatedHttpClient {
         bool silent = false
       }
       ) async {
-    assert(baseUrl.isNotEmpty || uu.startsWith("http"), "baseUrl is empty, please init AuthenticatedHttpClient with baseUrl !");
+    assert(baseUrl.isNotEmpty || uu.startsWith("http"), "AuthenticatedHttpClient must be initialized properly prior to use.");
     assert(_httpMethodMapper.containsKey(method.toLowerCase()), "$method is not supported yet!");
 
     method = method.toLowerCase();
     dynamic adequateConf = _pathParamsResolver(uu, params);
     uu = adequateConf["url"];
     params = adequateConf["params"];
-    var url = uu.startsWith("http") ? Uri.parse(uu) : (baseUrl.startsWith("http://") ? Uri.http(baseUrl, uu) : Uri.https(baseUrl, uu));
+    var url = uu.startsWith("http") ? Uri.parse(uu) : (baseUrl.startsWith("http://") ? Uri.http(_host, uu) : Uri.https(_host, uu));
     Function requestFnc = _httpMethodMapper[method]!;
 
     headers = headers ?? {};
@@ -346,7 +349,8 @@ class AuthenticatedHttpClient {
       const Symbol("headers"): headers
     };
     if (method == "get" || method == "head") {
-      url = Uri.https(baseUrl, uu, params?.map((key, value) => MapEntry(key, value.toString())));
+      Function resovleFnc = baseUrl.startsWith("http://") ? Uri.http : Uri.https;
+      url = resovleFnc(_host, uu, params?.map((key, value) => MapEntry(key, value.toString())));
     }
     if (method == "post" || method == "put" || method == "delete" || method == "patch") {
       namedArguments[const Symbol("body")] = params;
