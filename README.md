@@ -10,6 +10,8 @@
 An advanced authenticated HTTP client introduces a `factory` feature that generates request futures based on API definitions in a WYSIWYG style, 
 with additional supports for `mock` and `silent` modes during development.
 
+It all began with the forging pattern — `[mock] [silent] [method] /api/plan/{id}/details` — a skeletal incantation that would simplify every thing.
+
 - `factory`: generates AJAX request functions by api URI name in WYSIWYG style.
 - `mock`: mocking data from a local JSON file for specified requests during development. 
 - `silent`: suppress routing redirection for unauthorized or maintenance responses for specified request.

@@ -68,7 +68,7 @@ class AuthenticatedHttpClient {
   ///        assets:
   ///          - lib/mock/       # for mock
   ///
-  /// The timeoutInSecs optional argument, defaulting to 45 seconds, specifies HTTP
+  /// The timeoutSecs optional argument, defaulting to 45 seconds, specifies HTTP
   /// request timeout in seconds.
   ///
   void init(String url,
@@ -76,7 +76,7 @@ class AuthenticatedHttpClient {
         Function? responseHandler,
         HttpHeadersInterceptor? customHttpHeadersInterceptor,
         String mockDirectory = "lib/mock",
-        int? timeoutInSecs,
+        int? timeoutSecs,
       }
   ) {
     assert(url.isNotEmpty, "url CAN NOT be empty !");
@@ -88,7 +88,7 @@ class AuthenticatedHttpClient {
     _host = Uri.parse(baseUrl).host;
     List<InterceptorContract?> interceptors = [customHttpHeadersInterceptor, HttpRequestInterceptor()];
     _inner = InterceptedClient.build(interceptors: interceptors.where((inp) => inp != null).cast<InterceptorContract>().toList());
-    _requestTimeout = timeoutInSecs ?? _requestTimeout;
+    _requestTimeout = timeoutSecs ?? _requestTimeout;
     _responseHandler = responseHandler;
     _mockDirectory = mockDirectory;
   }
@@ -136,7 +136,7 @@ class AuthenticatedHttpClient {
       var mock = RegExp(r'(^|\s)mock\s', caseSensitive: false).hasMatch(stripped);
       var silent = RegExp(r'(^|\s)silent\s', caseSensitive: false).hasMatch(stripped);
       var uu = parts.first;
-      Future fnc(Map<dynamic, dynamic>? paramsUnnamed, {Map<String, String>? headers, Encoding? encoding, Map<dynamic, dynamic>? params, Map<String, String>? formFields, int? timeoutInSecs}) async  {
+      Future fnc(Map<dynamic, dynamic>? paramsUnnamed, {Map<String, String>? headers, Encoding? encoding, Map<dynamic, dynamic>? params, Map<String, String>? formFields, int? timeoutSecs}) async  {
         // support mock data, response for mock request
         if (mock) {
           String filename = "_${method}_${uu.replaceAll("/", "_").replaceAll(RegExp(r'[{:}]'), "")}";
@@ -148,7 +148,7 @@ class AuthenticatedHttpClient {
         // allow Map parameters in default Map<dynamic, dynamic>
         Map<String, dynamic>? paramsUnnamedFormatted = (paramsUnnamed == null || paramsUnnamed.isEmpty)? <String, dynamic>{} : paramsUnnamed.map((key, value) => MapEntry(key.toString(), value));
         // Map<String, dynamic>? paramsFormatted = (params == null || params.isEmpty) ? <String, dynamic>{}  : params.map((key, value) => MapEntry(key.toString(), value));
-        return _send(method, uu, headers: headers, params: paramsUnnamedFormatted, encoding: encoding, formFields: formFields, timeoutInSecs: timeoutInSecs, silent: silent);
+        return _send(method, uu, headers: headers, params: paramsUnnamedFormatted, encoding: encoding, formFields: formFields, timeoutSecs: timeoutSecs, silent: silent);
       }
       requestFncs[requestName] = fnc;
     });
@@ -172,14 +172,14 @@ class AuthenticatedHttpClient {
   /// The `anyErrorCallback` optional argument specifies a custom Function for processing
   /// responses when any of `futures` requests failed
   ///
-  /// The `delayInMilliSecs` optional argument specifies a delay in milliseconds to prevent
+  /// The `delayMillis` optional argument specifies a delay in milliseconds to prevent
   /// potential server concurrency issues. defaulting to `0`
   ///
   static Future<dynamic> all(List<dynamic> futures,
       {
         Function? anyCompleteCallback,
         Function? anyErrorCallback,
-        int delayInMilliSecs = 0
+        int delayMillis = 0
       }
   ) {
     int taskCompleted = 0;
@@ -205,7 +205,7 @@ class AuthenticatedHttpClient {
         }
         taskCompleted >= futures.length ? completer.complete(results) : null;
       });
-      delayInMilliSecs >= 0 ? sleep(Duration(milliseconds: delayInMilliSecs)) : null; // Sleep for some milliseconds
+      delayMillis >= 0 ? sleep(Duration(milliseconds: delayMillis)) : null; // Sleep for some milliseconds
     }
     return completer.future;
   }
@@ -329,7 +329,7 @@ class AuthenticatedHttpClient {
         Map<String, dynamic>? params,
         Encoding? encoding,
         Map<String, String>? formFields,
-        int? timeoutInSecs,
+        int? timeoutSecs,
         bool silent = false
       }
       ) async {
@@ -363,7 +363,7 @@ class AuthenticatedHttpClient {
       namedArguments[const Symbol("params")] = params;
       namedArguments[const Symbol("formFields")] = formFields;
     }
-    return Function.apply(requestFnc, [url], namedArguments).timeout(Duration(seconds: timeoutInSecs ?? _requestTimeout)).then((response) async {
+    return Function.apply(requestFnc, [url], namedArguments).timeout(Duration(seconds: timeoutSecs ?? _requestTimeout)).then((response) async {
       // http response statusCode == 200
       // utf-8 support: https://pub.dev/documentation/http/latest/
       // for read/readbytes method directly return Uint8List

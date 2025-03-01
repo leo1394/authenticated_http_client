@@ -42,7 +42,7 @@ void main() {
   /// AuthenticatedHttpClient.all is a static function,similar to Promise.all,
   /// which introduces a delay feature to prevent potential server concurrency issues
   List<Future> futures = [apiService.requestName(), apiService.requestNameWithParams({"id": 9528})];
-  AuthenticatedHttpClient.all(futures, delayInMilliSecs: 350).then((results){
+  AuthenticatedHttpClient.all(futures, delayMillis: 350).then((results){
     print(results['0']); // response of No.1 request
     print(results['1']); // response of No.2 request
   });

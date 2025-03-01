@@ -1,3 +1,6 @@
+## 0.2.1
+- tiny tuned
+
 ## 0.2.0
 - Bug fixed for ajax requests and initialization
 
