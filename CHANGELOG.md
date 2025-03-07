@@ -1,3 +1,6 @@
+## 0.2.2
+- request.headers add unique request id and print in http_interceptor
+
 ## 0.2.1
 - tiny tuned
 

@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -32,6 +33,7 @@ import 'map_dot.dart';
 ///
 class AuthenticatedHttpClient {
   static const String _authTokenCacheKey = "-cached-authorization";
+  static const String _alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   static String baseUrl = "";
   static String _host = "";
   static int _requestTimeout = 45; // timeout for http request in seconds
@@ -345,12 +347,13 @@ class AuthenticatedHttpClient {
 
     headers = headers ?? {};
     headers.putIfAbsent("_SILENT_", () => silent.toString());
+    headers.putIfAbsent("_REQUEST_ID_", () => _generateReqId());
     Map<Symbol, dynamic> namedArguments = {
       const Symbol("headers"): headers
     };
     if (method == "get" || method == "head") {
-      Function resovleFnc = baseUrl.startsWith("http://") ? Uri.http : Uri.https;
-      url = resovleFnc(_host, uu, params?.map((key, value) => MapEntry(key, value.toString())));
+      Function resolveFnc = baseUrl.startsWith("http://") ? Uri.http : Uri.https;
+      url = resolveFnc(_host, uu, params?.map((key, value) => MapEntry(key, value.toString())));
     }
     if (method == "post" || method == "put" || method == "delete" || method == "patch") {
       namedArguments[const Symbol("body")] = params;
@@ -428,5 +431,13 @@ class AuthenticatedHttpClient {
       print('Error reading JSON file: $e \n $stackTrace');
       return <String, dynamic>{}; // Return an empty JSON object in case of an error
     }
+  }
+
+  /// generate _REQUEST_ID from alphabet
+  String _generateReqId() {
+    final Random rand = Random();
+    return String.fromCharCodes(
+      List<int>.generate(16, (_) => _alphabet.codeUnitAt(rand.nextInt(_alphabet.length))),
+    );
   }
 }

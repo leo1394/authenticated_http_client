@@ -10,6 +10,7 @@ import 'router_helper.dart';
 
 class HttpRequestInterceptor implements InterceptorContract {
   bool silent = false;
+  String requestId = "";
 
   @override
   FutureOr<BaseRequest> interceptRequest({required BaseRequest request}) async {
@@ -30,11 +31,15 @@ class HttpRequestInterceptor implements InterceptorContract {
 
   Future<dynamic> naiveInterceptRequest({BaseRequest? requestObj, Request? dataObj}) async {
     dynamic request = requestObj ?? dataObj;
+    request.headers["charset"] = "UTF-8";
     // symbol silent == true means no underMaintenance and unauthorized login implied by response
     silent = request.headers["_SILENT_"] != null && request.headers["_SILENT_"] == "true";
     request.headers.remove("_SILENT_");
-    request.headers["charset"] = "UTF-8";
-    print("in interceptRequest ====> Headers: ${request.toString()} \n Body: ${request is MultipartRequest ? request.headers : request?.body }");
+    // unique request id
+    requestId = request.headers["X-Request-Id"] ?? request.headers["_REQUEST_ID_"] ?? "";
+    request.headers.remove("_REQUEST_ID_");
+
+    print("in interceptRequest[$requestId]${silent ? '[silent]' : ''}[${request?.url}] ====> Headers: ${request.toString()} \n Body: ${request is MultipartRequest ? request.headers : request?.body }");
     return request;
   }
 
@@ -49,7 +54,7 @@ class HttpRequestInterceptor implements InterceptorContract {
     }
 
     String bodyUtf8Decoded = utf8.decode(response.bodyBytes);
-    print("in interceptResponse [${response?.request?.url}] ====> statusCode: ${response.statusCode} Body: $bodyUtf8Decoded");
+    print("in interceptResponse[$requestId]${silent ? '[silent]' : ''}[${response?.request?.url}] ====> statusCode: ${response.statusCode} Body: $bodyUtf8Decoded");
 
     if (response.statusCode == 200 && _isJsonStr(bodyUtf8Decoded)) {
       var responseObj = json.decode(bodyUtf8Decoded);
