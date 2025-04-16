@@ -1,3 +1,7 @@
+## 0.2.3
+- bug fixed for requestId mark
+- introduce throttling for requests concurrency control
+
 ## 0.2.2
 - request.headers add unique request id and print in http_interceptor
 

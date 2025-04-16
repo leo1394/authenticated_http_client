@@ -1,7 +1,7 @@
 // Copyright (c) 2025, the Dart project authors. Use of this source code
 // is governed by a MIT license that can be found in the LICENSE file.
 
-class HttpError extends Error{
+class HttpError extends Error {
   static const int RESPONSE_FORMAT_ERROR = 102;
   static const int UNAUTHORIZED = 401;
   static const int FORBIDDEN = 403;
@@ -19,20 +19,28 @@ class HttpError extends Error{
 
   /// unknown error
   static const String UNKNOWN = "UNKNOWN";
+
   /// parse error
   static const String PARSE_ERROR = "PARSE_ERROR";
+
   /// network error
   static const String NETWORK_ERROR = "NETWORK_ERROR";
+
   /// http error
   static const String HTTP_ERROR = "HTTP_ERROR";
+
   /// ssl certificate error
   static const String SSL_ERROR = "SSL_ERROR";
+
   /// http request connect timeout error
   static const String CONNECT_TIMEOUT = "CONNECT_TIMEOUT";
+
   /// http response timeout error
   static const String RECEIVE_TIMEOUT = "RECEIVE_TIMEOUT";
+
   /// send in queuing timeout error
   static const String SEND_TIMEOUT = "SEND_TIMEOUT";
+
   /// cancel error
   static const String CANCEL = "CANCEL";
 
@@ -47,12 +55,15 @@ class HttpError extends Error{
   }
 
   static String helper({int? errorType, Error? error}) {
-    if (errorType == null && error == null) { return "";}
+    if (errorType == null && error == null) {
+      return "";
+    }
     String message = "Request failed, please try again later !";
     String type = "$errorType";
     if (errorType == null && error != null) {
       type = error is HttpError ? "${error.code}" : "${error.runtimeType}";
-      message = error is HttpError ? error.message ?? message : error.toString();
+      message =
+          error is HttpError ? error.message ?? message : error.toString();
       errorType ??= RuntimeTypeMapper[type];
     }
     switch (errorType) {
@@ -77,5 +88,4 @@ class HttpError extends Error{
     }
     return "[Error:$type] $message";
   }
-
 }

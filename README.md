@@ -12,9 +12,10 @@ with additional supports for `mock` and `silent` modes during development.
 
 It all began with the forging pattern — `[mock] [silent] [method] /api/plan/{id}/details` — a skeletal incantation that would simplify every thing.
 
-- `factory`: generates AJAX request functions by api URI name in WYSIWYG style.
+- `factory`: generates AJAX request functions by api URI declaration in WYSIWYG style.
 - `mock`: mocking data from a local JSON file for specified requests during development. 
 - `silent`: suppress routing redirection for unauthorized or maintenance responses for specified request.
+- `throttling`: queues excess requests using async/await for controlled upload pacing.
 - request futures functions generated can be accessed by dot notation.
 
 ## Platform Support
@@ -78,6 +79,15 @@ flutter pub add authenticated_http_client
 
     // Even http status 401 won't redirect to login   
     apiService.silentRequest().then((response) {/* success */}).catchError((e, stackTrace){ /* fail */ }).whenComplete((){ /* finally */ });
+```
+
+- Throttling control, queue excess requests.
+```dart
+    var apiService = AuthenticatedHttpClient.getInstance().factory({
+        "request"         : "SILENT POST /api/upload" 
+    });
+
+    apiService.request(throttling: true).then((response) {/* success */}).catchError((e, stackTrace){ /* fail */ }).whenComplete((){ /* finally */ });
 ```
 
 - AuthenticatedHttpClient.all is a static function, like Promise.all, with a delay feature to prevent potential server concurrency issues.
