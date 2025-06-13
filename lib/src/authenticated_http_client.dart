@@ -166,6 +166,7 @@ class AuthenticatedHttpClient {
           Map<dynamic, dynamic>? params,
           Map<String, String>? formFields,
           int? timeoutSecs,
+          String? requestId,
           bool throttling = false}) async {
         // support mock data, response for mock request
         if (mock) {
@@ -191,6 +192,7 @@ class AuthenticatedHttpClient {
               encoding: encoding,
               formFields: formFields,
               timeoutSecs: timeoutSecs,
+              requestId: requestId,
               silent: silent);
         }
 
@@ -201,6 +203,7 @@ class AuthenticatedHttpClient {
             encoding: encoding,
             formFields: formFields,
             timeoutSecs: timeoutSecs,
+            requestId: requestId,
             silent: silent);
         if (_activeCount < _MAX_THROTTLING_POOL) {
           _sendThrottlingQueue(requestTask);
@@ -416,6 +419,7 @@ class AuthenticatedHttpClient {
       Encoding? encoding,
       Map<String, String>? formFields,
       int? timeoutSecs,
+      String? requestId,
       bool silent = false}) async {
     assert(baseUrl.isNotEmpty || uu.startsWith("http"),
         "AuthenticatedHttpClient must be initialized properly prior to use.");
@@ -435,7 +439,7 @@ class AuthenticatedHttpClient {
 
     headers = headers ?? {};
     headers.putIfAbsent("_SILENT_", () => silent.toString());
-    headers.putIfAbsent("_REQUEST_ID_", () => _generateReqId());
+    headers.putIfAbsent("_REQUEST_ID_", () => requestId ?? _generateReqId());
     Map<Symbol, dynamic> namedArguments = {const Symbol("headers"): headers};
     if (method == "get" || method == "head") {
       Function resolveFnc =

@@ -12,6 +12,7 @@ class HttpRequestTask {
   final Map<String, String>? formFields;
   final bool silent;
   final int? timeoutSecs;
+  final String? requestId;
   final Completer<dynamic> completer;
 
   HttpRequestTask(this.completer, this.method, this.uu, this.headers,
@@ -19,5 +20,6 @@ class HttpRequestTask {
       this.encoding,
       this.formFields,
       this.timeoutSecs,
+      this.requestId,
       this.silent = false});
 }

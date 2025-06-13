@@ -1,3 +1,6 @@
+## 0.2.4
+- extend request id from factory function for outside ajax tracking purpose 
+
 ## 0.2.3
 - bug fixed for requestId mark
 - introduce throttling for requests concurrency control

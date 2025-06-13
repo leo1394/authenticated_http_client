@@ -90,6 +90,17 @@ flutter pub add authenticated_http_client
     apiService.request(throttling: true).then((response) {/* success */}).catchError((e, stackTrace){ /* fail */ }).whenComplete((){ /* finally */ });
 ```
 
+- Every request would be marked with an unique id (say `requestId`) for tracking purpose, which also can be passed in as named argument.
+```dart
+    var apiService = AuthenticatedHttpClient.getInstance().factory({
+        "request"         : "SILENT POST /api/upload" 
+    });
+    String requestId = Uuid().v1();
+    print("gonna send request with unique id : $requestId");
+    apiService.request(requestId: requestId).then((response) {/* success */}).catchError((e, stackTrace){ /* fail */ }).whenComplete((){ /* finally */ });
+    
+```
+
 - AuthenticatedHttpClient.all is a static function, like Promise.all, with a delay feature to prevent potential server concurrency issues.
 ```dart
     var apiService = AuthenticatedHttpClient.getInstance().factory({
