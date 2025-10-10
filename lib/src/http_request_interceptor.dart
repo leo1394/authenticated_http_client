@@ -8,9 +8,8 @@ import 'package:http_interceptor/http_interceptor.dart';
 import 'http_error.dart';
 import 'router_helper.dart';
 
+/// inner HttpRequestInterceptor
 class HttpRequestInterceptor implements InterceptorContract {
-  // bool silent = false;
-  // String requestId = "";
   Map<int, Map<String, dynamic>> sessionsCached = {};
 
   @override
@@ -51,8 +50,11 @@ class HttpRequestInterceptor implements InterceptorContract {
       "silent": silent,
       "requestId": requestId
     };
+    String bodyUtf8Decoded = request is MultipartRequest
+        ? request.headers.toString()
+        : utf8.decode(request?.bodyBytes);
     print(
-        "in interceptRequest[$requestId]${silent ? '[silent]' : ''}[${request?.url}] ====> Headers: ${request.toString()} \n Body: ${request is MultipartRequest ? request.headers : request?.body}");
+        "in interceptRequest[$requestId]${silent ? '[silent]' : ''} ====> Headers: ${request.toString()} ${bodyUtf8Decoded.isNotEmpty ? 'Body: $bodyUtf8Decoded' : ''}");
     return request;
   }
 
@@ -74,7 +76,7 @@ class HttpRequestInterceptor implements InterceptorContract {
 
     String bodyUtf8Decoded = utf8.decode(response.bodyBytes);
     print(
-        "in interceptResponse[$requestId]${silent ? '[silent]' : ''}[${response?.request?.url}] ====> statusCode: ${response.statusCode} Body: $bodyUtf8Decoded");
+        "in interceptResponse[$requestId]${silent ? '[silent]' : ''} ====> Headers: ${response?.request.toString()} statusCode: ${response.statusCode} Body: $bodyUtf8Decoded");
 
     if (response.statusCode == 200 && _isJsonStr(bodyUtf8Decoded)) {
       var responseObj = json.decode(bodyUtf8Decoded);

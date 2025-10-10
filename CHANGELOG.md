@@ -1,3 +1,6 @@
+## 0.2.5
+- tiny tuned
+
 ## 0.2.4
 - extend request id from factory function for outside ajax tracking purpose 
 

@@ -7,49 +7,50 @@
 [![GitHub Stars](https://img.shields.io/github/stars/leo1394/authenticated_http_client.svg?branch=master)](https://github.com/leo1394/authenticated_http_client/stargazers)
 [![GitHub License](https://img.shields.io/badge/license-MIT%20-blue.svg)](https://raw.githubusercontent.com/leo1394/authenticated_http_client/master/LICENSE)
 
-一个支持登陆态管理的 HTTP 客户端，提供 `factory` 生产方法，可按 API 声明以所见即所得（WYSIWYG）的方式生成请求 Future，同时在开发阶段额外支持 `mock` 与 `silent` 模式。
+An advanced authenticated HTTP client introduces a `factory` feature that generates request futures based on API definitions in a WYSIWYG style, 
+with additional supports for `mock` and `silent` modes during development.
 
-一切从如下简洁的范式约定开始 —— `[mock] [silent] [method] /api/plan/{id}/details` —— 让HTTP请求变得简单可见。
+It all began with the forging pattern — `[mock] [silent] [method] /api/plan/{id}/details` — a skeletal incantation that would simplify every thing.
 
-- `factory`：按 API URI 声明以所见即所得方式生成 AJAX 请求函数。
-- `mock`：在开发阶段，为指定请求从本地 JSON 文件返回模拟数据。
-- `silent`：为指定请求在遇到未授权或维护响应时抑制路由跳转。
-- `throttling`：当开启限流时，超量请求将排队（基于 async/await）以控制上传节奏。
-- 生成的请求 Future 函数可以通过链式访问。
+- `factory`: generates AJAX request functions by api URI declaration in WYSIWYG style.
+- `mock`: mocking data from a local JSON file for specified requests during development. 
+- `silent`: suppress routing redirection for unauthorized or maintenance responses for specified request.
+- `throttling`: queues excess requests using async/await for controlled upload pacing.
+- request futures functions generated can be accessed by dot notation.
 
-语言: 中文 | [English](README-EN.md)
-## 平台支持
+Language: English | [中文](README.md)
+## Platform Support
 
 | Android | iOS | MacOS | Web | Linux | Windows |
 | :-----: | :-: | :---: |:---:| :---: | :-----: |
 |   ✅    | ✅  |  ✅   |  ❌️  |  ✅   |   ✅    |
 
-## 依赖要求
+## Requirements
 
 - Flutter >=3.0.0 <4.0.0
 - Dart: ^2.17.0
 - http: ^1.3.0
 - http_interceptor: ^2.0.0
 
-## 开始使用
-该库已发布在 pub.dev，运行以下 Flutter 命令安装：
+## Getting started
+published on pub.dev, run this Flutter command
 ```shell
 flutter pub add authenticated_http_client
 ```
 
-## 用法演示
-- 获取 `auth_token` 并将其保存到 `AuthenticatedHttpClient` 的缓存中。
+## Usage showcase
+- Retrieve the auth_token and store it in the AuthenticatedHttpClient cache.
 ```dart
     var apiService = AuthenticatedHttpClient.getInstance().factory({ "login"  : "POST /api/sign-in" });
     
     apiService.login({"username": "demo", "passwords": "test123"}).then((response) {
-        // 响应体格式：{code, message, data}
+        // response here in format {code, message, data}
         final {"auth_token": authToken, "expired_at": expiredAt} = response["data"];
         AuthenticatedHttpClient.getInstance().setAuthToken(authToken);
     });
 ```
 
-- 创建支持路径参数的请求 Future。
+- Create request futures with support for path parameters.
 ```dart
     var apiService = AuthenticatedHttpClient.getInstance().factory({
         "requestName"                : "POST /api/submit/plan",
@@ -61,27 +62,27 @@ flutter pub add authenticated_http_client
     apiService.requestNameWithBraceParams({"id": 9527}).then((response) {/* success */}).catchError((e, stackTrace){ /* fail */ }).whenComplete((){ /* finally */ });
 ```
 
-- `mock` 请求将从 `mockDirectory`（默认 `/lib/mock`）中的 JSON 文件加载。可通过 `AuthenticatedHttpClient.getInstance().init()` 配置 `mockDirectory`，并需在 `pubspec.yaml` 的 assets 段落中声明。
+- Mock requests are served from JSON files in the mockDirectory (defaulting to /lib/mock), which can be configured via AuthenticatedHttpClient.getInstance().init() and need to be declared under assets section in pubspec.yaml.
 ```dart
     var apiService = AuthenticatedHttpClient.getInstance().factory({
         "mockRequest"           : "MOCK POST /api/task/config", 
     });
 
-    // 将从 mockDirectory /lib/mock 下的 _post_api_task_config.json 读取模拟数据
+    // mock from _post_api_task_config.json under mockDirectory /lib/mock
     apiService.mockRequest().then((response) {/* success */}).catchError((e, stackTrace){ /* fail */ }).whenComplete((){ /* finally */ });
 ```
 
-- `silent` 静默请求在遇到未授权响应或维护中时不会触发路由跳转。
+- Silent requests skip redirection for unauthorized responses or during maintenance.
 ```dart
     var apiService = AuthenticatedHttpClient.getInstance().factory({
         "silentRequest"         : "SILENT GET /api/message/check/unread" 
     });
 
-    // 即便返回 401 也不会跳转到登录页
+    // Even http status 401 won't redirect to login   
     apiService.silentRequest().then((response) {/* success */}).catchError((e, stackTrace){ /* fail */ }).whenComplete((){ /* finally */ });
 ```
 
-- 限流控制：当请求过多时进行排队。
+- Throttling control, queue excess requests.
 ```dart
     var apiService = AuthenticatedHttpClient.getInstance().factory({
         "request"         : "SILENT POST /api/upload" 
@@ -90,7 +91,7 @@ flutter pub add authenticated_http_client
     apiService.request(throttling: true).then((response) {/* success */}).catchError((e, stackTrace){ /* fail */ }).whenComplete((){ /* finally */ });
 ```
 
-- 每个请求都会被标记一个唯一 ID（如 `requestId`）用于追踪，也可通过命名参数传入。
+- Every request would be marked with an unique id (say `requestId`) for tracking purpose, which also can be passed in as named argument.
 ```dart
     var apiService = AuthenticatedHttpClient.getInstance().factory({
         "request"         : "SILENT POST /api/upload" 
@@ -101,7 +102,7 @@ flutter pub add authenticated_http_client
     
 ```
 
-- `AuthenticatedHttpClient.all` 为一个静态函数，类似 Promise.all，并带有可选延迟功能以避免服务器并发导致的潜在问题。
+- AuthenticatedHttpClient.all is a static function, like Promise.all, with a delay feature to prevent potential server concurrency issues.
 ```dart
     var apiService = AuthenticatedHttpClient.getInstance().factory({
         "requestName"           : "POST /api/submit/plan",
@@ -110,27 +111,27 @@ flutter pub add authenticated_http_client
 
     List<Future> futures = [apiService.requestName(), apiService.requestNameWithParams({"id": 9528})];
     AuthenticatedHttpClient.all(futures, delayInMilliSecs: 350).then((results){
-        print(results['0']); // 第 1 个请求的响应
-        print(results['1']); // 第 2 个请求的响应
+        print(results['0']); // response of No.1 request
+        print(results['1']); // response of No.2 request
     });
 ```
 
-## 在 Dart 中的使用步骤
-- 初始化一个 `RouterHelper`，用于在必要时控制何时以及如何跳转至登录页或维护页。
+## Steps for Usage in Dart
+- Initialize a RouterHelper to manage when and how the authenticated HTTP client redirects to the login or maintenance route, if necessary.
 ```dart
     import 'package:authenticated_http_client/router_helper.dart';
     
     RouterHelper.init(
-        jump2LoginCallback: () { /* 依据你的路由库跳转到登录页 */ },
+        jump2LoginCallback: () { /* navigate to login route depends on routing library */ },
         unAuthCode: "101|103"
     );
 ```
 <details>
-  <summary>使用不同路由库实现 `jump2LoginCallback` 的示例</summary>
+  <summary>`jump2LoginCallback` examples using different routing library</summary>
 
 ```dart
-    // FluroRouter 示例
-    BuildContext context; // 保存当前构建上下文
+    // FluroRouter example
+    BuildContext context; // keep current build context
     function jump2LoginCallback() {
         String? currentRoute = ModalRoute.of(context)?.settings.name;
         if(currentRoute?.split("?").first == "/login") { return ; }
@@ -139,8 +140,8 @@ flutter pub add authenticated_http_client
 ```
 
 ```dart
-    // GoRouter 示例
-    BuildContext context; // 保存当前构建上下文
+    // GoRouter example
+    BuildContext context; // keep current build context
     function jump2LoginCallback() {
         String? currentRoute = GoRouter.of(context).location;
         if(currentRoute?.split("?").first == "/login") { return ; }
@@ -150,7 +151,7 @@ flutter pub add authenticated_http_client
 
 </details>
 
-- 实现 `CustomHttpHeadersInterceptor`，稍后初始化 `AuthenticatedHttpClient` 时会用到。
+- Implement the CustomHttpHeadersInterceptor required for initializing the AuthenticatedHttpClient later.
 ```dart
     import 'package:authenticated_http_client/http_headers_interceptor.dart';
     
@@ -172,7 +173,7 @@ flutter pub add authenticated_http_client
     }
 ```
 
-- 初始化已认证 HTTP 客户端，之后每个 AJAX 请求都会在 Authorization 头中附带 token。
+- Initialize an authenticated HTTP client that appends a token to the Authorization header for every subsequent AJAX request.  
 ```dart
     import 'package:authenticated_http_client/authenticated_http_client.dart';
     
@@ -182,32 +183,32 @@ flutter pub add authenticated_http_client
     );
 ```
 
-- 最终，你可以按需使用任意功能。
+- Ultimately, use any feature at your convenience.
 ```dart
     var apiService = AuthenticatedHttpClient.getInstance().factory({
         "login"                 : "POST /api/sign-in",
         "requestName"           : "POST /api/submit/plan",
-        "requestNameWithParams" : "GET /api/plan/:id/details", // 或 "GET /api/plan/{id}/details"
-        "mockRequest"           : "MOCK POST /api/task/config", // 将从 mockDirectory /lib/mock 下的 _post_api_task_config.json 读取模拟数据
-        "silentRequest"         : "SILENT GET /api/message/check/unread" // 静默请求在未授权或维护时不跳转
+        "requestNameWithParams" : "GET /api/plan/:id/details", // or "GET /api/plan/{id}/details"
+        "mockRequest"           : "MOCK POST /api/task/config", // mock from _post_api_task_config.json under mockDirectory /lib/mock
+        "silentRequest"         : "SILENT GET /api/message/check/unread" // silent request won't jump when response met unauthorized or under maintenance
     });
     
     apiService.login({"username": "demo", "passwords": "test123"}).then((response) {
-        // 响应体格式：{code, message, data}
+        // response here in format {code, message, data}
         final {"auth_token": authToken, "expired_at": expiredAt} = response["data"];
         AuthenticatedHttpClient.getInstance().setAuthToken(authToken);
     });
     apiService.requestName().then((response) {/* success */}).catchError((e, stackTrace){ /* fail */ }).whenComplete((){ /* finally */ });
     apiService.requestNameWithParams({"id": 9527}).then((response) {/* success */}).catchError((e, stackTrace){ /* fail */ }).whenComplete((){ /* finally */ });
     
-    /// AuthenticatedHttpClient.all 是一个静态函数，类似 Promise.all，
-    /// 并引入了延迟功能以避免潜在的服务器并发问题
+    /// AuthenticatedHttpClient.all is a static function,similar to Promise.all,
+    /// which introduces a delay feature to prevent potential server concurrency issues
     List<Future> futures = [apiService.requestName(), apiService.requestNameWithParams({"id": 9528})];
     AuthenticatedHttpClient.all(futures, delayInMilliSecs: 350).then((results){
-        print(results['0']); // 第 1 个请求的响应
-        print(results['1']); // 第 2 个请求的响应
+        print(results['0']); // response of No.1 request
+        print(results['1']); // response of No.2 request
     });
 ```
 
-## 其他信息
-如有问题，欢迎提交 Issue。
+## Additional information
+Feel free to file an issue if you have any problem.
