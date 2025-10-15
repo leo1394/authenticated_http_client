@@ -14,6 +14,13 @@ abstract class HttpHeadersInterceptor extends InterceptorContract {
   @override
   FutureOr<BaseRequest> interceptRequest({required BaseRequest request}) async {
     try {
+      // Check for the skip header interceptor
+      if (request.headers['X-Skip-Headers'] == 'true') {
+        request.headers.remove("X-Skip-Headers");
+        print('Skipping headers InterceptRequest for ${request.url}');
+        return request; // Skip processing, pass request unchanged
+      }
+
       Map<String, String> headers = headersInterceptor(request.headers);
       for (var entry in headers.entries) {
         request.headers[entry.key] = entry.value;

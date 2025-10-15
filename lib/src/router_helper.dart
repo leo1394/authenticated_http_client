@@ -4,14 +4,16 @@
 /// An util Class managing when and how authenticated http client to redirect
 /// login or under maintenance route if needed.
 class RouterHelper {
+  static const int _successCode = 0;
   static const int _unAuthStatusCode = 401;
   static List<int> _unAuthCode = [
     101
   ]; // Unauthorized code approved by backend developers.
-  static int?
-      _maintenanceCode; // Maintenance code approved by backend developers.
+  // Maintenance code approved by backend developers.
+  static int? _maintenanceCode;
   static Function? _onJump2Login;
   static Function? _onJump2UnderMaintenance;
+  static Function? _onErrorInterceptorHandler;
 
   /// initialize function
   ///
@@ -87,8 +89,9 @@ class RouterHelper {
         : null;
   }
 
-  static get unAuthCode => _unAuthCode;
-  static get unAuthStatusCode => _unAuthStatusCode;
+  static int get successCode => _successCode;
+  static List<int> get unAuthCode => _unAuthCode;
+  static int get unAuthStatusCode => _unAuthStatusCode;
   static int? get maintenanceCode => _maintenanceCode;
 
   /// setter for maintenanceCode which decide when http client

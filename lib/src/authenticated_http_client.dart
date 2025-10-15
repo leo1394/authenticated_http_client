@@ -16,6 +16,14 @@ import 'http_headers_interceptor.dart';
 import 'http_request_task.dart';
 import 'map_dot.dart';
 
+/// Error handler for authenticated http request
+typedef ErrorHttpResponseInterceptorHandler = void Function(
+    {int? code,
+    int? statusCode,
+    bool silent,
+    String? message,
+    Exception? exception});
+
 /// Example Usage
 /// 1. AuthenticatedHttpClient.getInstance().init(url)
 ///    url some like "https://portal-api-test.company.com"
@@ -40,14 +48,16 @@ class AuthenticatedHttpClient {
   static String baseUrl = "";
   static String _host = "";
   static int _requestTimeout = 45; // timeout for http request in seconds
+  static int _maxThrottlingNum = 10; // max throttling limit for requests
   Function? _responseHandler;
   String? _mockDirectory; // mock data directory
   final Queue<HttpRequestTask> _pendingRequestsOfThrottlingQueue = Queue();
-  final int _MAX_THROTTLING_POOL = 10;
   int _activeCount = 0;
   Map<String, Function> _httpMethodMapper = {};
+  ErrorHttpResponseInterceptorHandler? _errorInterceptorHandler;
   final Future<SharedPreferences> _sharedPrefsFuture;
   late final http.Client _inner;
+  bool _isInnerInitialized = false;
 
   AuthenticatedHttpClient._(this._sharedPrefsFuture);
   static final AuthenticatedHttpClient _instance =
@@ -81,33 +91,39 @@ class AuthenticatedHttpClient {
   /// request timeout in seconds.
   ///
   void init(
-    String url, {
+    String origin, {
     Function? responseHandler,
     HttpHeadersInterceptor? customHttpHeadersInterceptor,
+    ErrorHttpResponseInterceptorHandler? errorInterceptorHandler,
     String mockDirectory = "lib/mock",
+    int maxThrottlingNum = 10,
     int? timeoutSecs,
   }) {
-    assert(url.isNotEmpty, "url CAN NOT be empty !");
-
-    if (url.isEmpty || url == baseUrl) {
-      return;
-    }
-    print("in AuthenticatedHttpClient base change to $url ...");
-    url = url.replaceAll(RegExp(r'\/$'), "");
-    baseUrl = url.startsWith('http://') || url.startsWith('https://')
-        ? url
-        : Uri.https(url).origin;
+    assert(origin.isNotEmpty, "url cannot be empty!");
+    print("in AuthenticatedHttpClient base change to $origin ...");
+    origin = origin.replaceAll(RegExp(r'\/$'), "");
+    baseUrl = origin.startsWith('http://') || origin.startsWith('https://')
+        ? origin
+        : Uri.https(origin).origin;
     _host = Uri.parse(baseUrl).host;
+
     List<InterceptorContract?> interceptors = [
-      customHttpHeadersInterceptor,
-      HttpRequestInterceptor()
+      HttpRequestInterceptor(),
+      customHttpHeadersInterceptor
     ];
-    _inner = InterceptedClient.build(
+    if (!_isInnerInitialized) {
+      _requestTimeout = timeoutSecs ?? _requestTimeout;
+      _errorInterceptorHandler = errorInterceptorHandler;
+      _isInnerInitialized = true;
+      _inner = InterceptedClient.build(
         interceptors: interceptors
             .where((inp) => inp != null)
             .cast<InterceptorContract>()
-            .toList());
-    _requestTimeout = timeoutSecs ?? _requestTimeout;
+            .toList(),
+        requestTimeout: Duration(seconds: _requestTimeout),
+      );
+    }
+    _maxThrottlingNum = maxThrottlingNum;
     _responseHandler = responseHandler;
     _mockDirectory = mockDirectory;
   }
@@ -146,7 +162,9 @@ class AuthenticatedHttpClient {
       "read": read,
       "readBytes": readBytes,
       "up": upload,
-      "down": readBytes,
+      "upload": upload,
+      "down": download,
+      "download": download,
     };
     requests.forEach((requestName, requestUri) {
       var stripped = requestUri.replaceAll(RegExp(r"\s+"), " ").trim();
@@ -167,6 +185,9 @@ class AuthenticatedHttpClient {
           Map<String, String>? formFields,
           int? timeoutSecs,
           String? requestId,
+          bool authenticate = true,
+          String savePath = "",
+          void Function(int received, int total)? onReceiveProgress,
           bool throttling = false}) async {
         // support mock data, response for mock request
         if (mock) {
@@ -193,6 +214,9 @@ class AuthenticatedHttpClient {
               formFields: formFields,
               timeoutSecs: timeoutSecs,
               requestId: requestId,
+              onReceiveProgress: onReceiveProgress,
+              savePath: savePath,
+              authenticate: authenticate,
               silent: silent);
         }
 
@@ -204,8 +228,11 @@ class AuthenticatedHttpClient {
             formFields: formFields,
             timeoutSecs: timeoutSecs,
             requestId: requestId,
+            authenticate: authenticate,
+            savePath: savePath,
+            onReceiveProgress: onReceiveProgress,
             silent: silent);
-        if (_activeCount < _MAX_THROTTLING_POOL) {
+        if (_activeCount < _maxThrottlingNum) {
           _sendThrottlingQueue(requestTask);
         } else {
           _pendingRequestsOfThrottlingQueue.addLast(requestTask);
@@ -223,6 +250,10 @@ class AuthenticatedHttpClient {
     SharedPreferences prefs = await _sharedPrefsFuture;
     prefs.setString(_authTokenCacheKey, token);
   }
+
+  /// Getter for errorInterceptorHandler in an Authenticated HTTP Client
+  ErrorHttpResponseInterceptorHandler? get errorInterceptorHandler =>
+      _errorInterceptorHandler;
 
   /// A static function similar to Promise.all, which introduces a delay feature
   /// to prevent potential server concurrency issues
@@ -277,15 +308,21 @@ class AuthenticatedHttpClient {
   /// so, we need to override ajax kinds of AJAX methods function.
 
   /// Sends an HTTP GET request with the given headers and body to the given URL.
-  Future<http.Response> get(Uri url, {Map<String, String>? headers}) async {
-    var authHeaders = await _auth(headers);
+  Future<http.Response> get(Uri url,
+      {Map<String, String>? headers, bool authenticate = false}) async {
+    var authHeaders = authenticate ? await _auth(headers) : headers;
+    authHeaders ??= <String, String>{};
     return _inner.get(url, headers: authHeaders);
   }
 
   /// Sends an HTTP POST request with the given headers and body to the given URL.
   Future<http.Response> post(Uri url,
-      {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
-    var authHeaders = await _auth(headers);
+      {Map<String, String>? headers,
+      Object? body,
+      Encoding? encoding,
+      bool authenticate = false}) async {
+    var authHeaders = authenticate ? await _auth(headers) : headers;
+    authHeaders ??= <String, String>{};
     // {"content-type": "application/json"}  jsonEncode(body) body accepted as String
     // {"content-type": "application/x-www-form-urlencoded"} body accepted as Map
     Object? bodyFormatted = authHeaders["content-type"]?.toLowerCase() ==
@@ -298,8 +335,12 @@ class AuthenticatedHttpClient {
 
   /// Sends an HTTP PUT request with the given headers and body to the given URL.
   Future<http.Response> put(Uri url,
-      {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
-    var authHeaders = await _auth(headers);
+      {Map<String, String>? headers,
+      Object? body,
+      Encoding? encoding,
+      bool authenticate = false}) async {
+    var authHeaders = authenticate ? await _auth(headers) : headers;
+    authHeaders ??= <String, String>{};
     // {"content-type": "application/json"}  jsonEncode(body) body accepted as String
     // {"content-type": "application/x-www-form-urlencoded"} body accepted as Map
     Object? bodyFormatted = authHeaders["content-type"]?.toLowerCase() ==
@@ -312,16 +353,24 @@ class AuthenticatedHttpClient {
 
   /// Sends an HTTP DELETE request with the given headers and body to the given URL.
   Future<http.Response> delete(Uri url,
-      {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
-    var authHeaders = await _auth(headers);
+      {Map<String, String>? headers,
+      Object? body,
+      Encoding? encoding,
+      bool authenticate = false}) async {
+    var authHeaders = authenticate ? await _auth(headers) : headers;
+    authHeaders ??= <String, String>{};
     return _inner.delete(url,
         headers: authHeaders, body: body, encoding: encoding);
   }
 
   /// Sends an HTTP PATCH request with the given headers and body to the given URL.
   Future<http.Response> patch(Uri url,
-      {Map<String, String>? headers, Object? body, Encoding? encoding}) async {
-    var authHeaders = await _auth(headers);
+      {Map<String, String>? headers,
+      Object? body,
+      Encoding? encoding,
+      bool authenticate = false}) async {
+    var authHeaders = authenticate ? await _auth(headers) : headers;
+    authHeaders ??= <String, String>{};
     // {"content-type": "application/json"}  jsonEncode(body) body accepted as String
     // {"content-type": "application/x-www-form-urlencoded"} body accepted as Map
     Object? bodyFormatted = authHeaders["content-type"]?.toLowerCase() ==
@@ -333,26 +382,76 @@ class AuthenticatedHttpClient {
   }
 
   /// Sends an HTTP HEAD request with the given headers and body to the given URL.
-  Future<http.Response> head(Uri url, {Map<String, String>? headers}) async {
-    var authHeaders = await _auth(headers);
+  Future<http.Response> head(Uri url,
+      {Map<String, String>? headers, bool authenticate = false}) async {
+    var authHeaders = authenticate ? await _auth(headers) : headers;
+    authHeaders ??= <String, String>{};
     return _inner.head(url, headers: authHeaders);
+  }
+
+  /// Sends an HTTP GET request with the given headers to the given URL and
+  /// returns a Future that completes to the body of the response as a Uint8List.
+  Future<Uint8List> download(Uri url,
+      {Map<String, String>? headers,
+      Map<String, dynamic>? params,
+      String savePath = "",
+      bool authenticate = false,
+      void Function(int, int)? onReceiveProgress}) async {
+    // Make a GET request and get a streamed response
+    final request = http.Request('GET', url);
+    var authHeaders = authenticate ? await _auth(headers) : headers;
+    request.headers.addAll(authHeaders ?? {});
+    final streamedResponse = await _inner.send(request);
+
+    // Get the total content length (if available)
+    final total = streamedResponse.contentLength ?? -1;
+
+    // Accumulate the received bytes
+    final bytes = <int>[];
+    int received = 0;
+
+    // Listen to the stream of bytes and update progress
+    await for (final chunk in streamedResponse.stream) {
+      bytes.addAll(chunk);
+      received += chunk.length;
+      if (onReceiveProgress != null) {
+        onReceiveProgress(received, total);
+      }
+    }
+    // Convert to Uint8List
+    final result = Uint8List.fromList(bytes);
+
+    // Save to file if savePath is provided
+    if (savePath.isNotEmpty) {
+      final file = File(savePath);
+      if (!file.existsSync()) {
+        file.createSync(recursive: true);
+      }
+      await file.writeAsBytes(result);
+    }
+
+    return result;
   }
 
   /// Sends an HTTP GET request with the given headers to the given URL and
   /// returns a Future that completes to the body of the response as a String.
   Future<String> read(Uri url,
-      {Map<String, String>? headers, Map<String, dynamic>? params}) async {
-    // var authHeaders = await _auth(headers);
-    return _inner.read(url, headers: headers);
+      {Map<String, String>? headers,
+      Map<String, dynamic>? params,
+      bool authenticate = false}) async {
+    var authHeaders = authenticate ? await _auth(headers) : headers;
+    return _inner.read(url, headers: authHeaders);
   }
 
   /// Sends an HTTP GET request with the given headers to the given URL and
   /// returns a Future that completes to the body of the response as a list of
   /// bytes.
   Future<Uint8List> readBytes(Uri url,
-      {Map<String, String>? headers, Map<String, dynamic>? params}) async {
-    // var authHeaders = await _auth(headers);
-    return _inner.readBytes(url, headers: headers);
+      {Map<String, String>? headers,
+      Map<String, dynamic>? params,
+      bool authenticate = false}) async {
+    var authHeaders = authenticate ? await _auth(headers) : headers;
+    return _inner.readBytes(url, headers: authHeaders);
   }
 
   /// Implementation for UPLOAD file request with the given params, headers, body and formFields
@@ -362,6 +461,7 @@ class AuthenticatedHttpClient {
   ///
   Future<http.Response> upload(Uri url,
       {required Map<String, dynamic> params,
+      bool authenticate = false,
       Map<String, String>? headers,
       Map<String, String>? formFields}) async {
     http.Response? response;
@@ -381,8 +481,8 @@ class AuthenticatedHttpClient {
 
     http.MultipartRequest request = http.MultipartRequest('POST', url);
     request = await interceptor.naiveInterceptRequest(requestObj: request);
-    var authHeaders = await _auth(headers);
-    request.headers.addAll(authHeaders);
+    var authHeaders = authenticate ? await _auth(headers) : headers;
+    request.headers.addAll(authHeaders ?? {});
     request.fields.addAll(formFields ?? {});
     for (var entry in params.entries) {
       String fileFieldName = entry.key;
@@ -420,6 +520,9 @@ class AuthenticatedHttpClient {
       Map<String, String>? formFields,
       int? timeoutSecs,
       String? requestId,
+      bool authenticate = true,
+      String savePath = "",
+      void Function(int received, int total)? onReceiveProgress,
       bool silent = false}) async {
     assert(baseUrl.isNotEmpty || uu.startsWith("http"),
         "AuthenticatedHttpClient must be initialized properly prior to use.");
@@ -436,16 +539,23 @@ class AuthenticatedHttpClient {
             ? Uri.http(_host, uu)
             : Uri.https(_host, uu));
     Function requestFnc = _httpMethodMapper[method]!;
-
+    bool needIntercepted =
+        authenticate || baseUrl.isEmpty || url.toString().startsWith(baseUrl);
     headers = headers ?? {};
     headers.putIfAbsent("_SILENT_", () => silent.toString());
     headers.putIfAbsent("_REQUEST_ID_", () => requestId ?? _generateReqId());
-    Map<Symbol, dynamic> namedArguments = {const Symbol("headers"): headers};
+    headers.putIfAbsent("_ICP_REQUEST_", () => needIntercepted.toString());
+    Map<Symbol, dynamic> namedArguments = {
+      const Symbol("headers"): headers,
+      const Symbol("authenticate"): authenticate
+    };
     if (method == "get" || method == "head") {
       Function resolveFnc =
           baseUrl.startsWith("http://") ? Uri.http : Uri.https;
-      url = resolveFnc(_host, uu,
-          params?.map((key, value) => MapEntry(key, value.toString())));
+      var paramsTmp = (params == null || params.isEmpty)
+          ? null
+          : params.map((key, value) => MapEntry(key, value.toString()));
+      url = resolveFnc(url.host, url.path, paramsTmp);
     }
     if (method == "post" ||
         method == "put" ||
@@ -454,43 +564,72 @@ class AuthenticatedHttpClient {
       namedArguments[const Symbol("body")] = params;
       namedArguments[const Symbol("encoding")] = encoding;
     }
-    if (method == "read" ||
-        method == "readBytes" ||
-        method == "down" ||
-        method == "download") {
+    if (method == "read" || method == "readBytes") {
       namedArguments[const Symbol("params")] = params;
+    }
+    if (method == "down" || method == "download") {
+      namedArguments[const Symbol("params")] = params;
+      namedArguments[const Symbol("savePath")] = savePath;
+      namedArguments[const Symbol("onReceiveProgress")] = onReceiveProgress;
     }
     if (method == "up" || method == "upload") {
       namedArguments[const Symbol("params")] = params;
       namedArguments[const Symbol("formFields")] = formFields;
     }
-    return Function.apply(requestFnc, [url], namedArguments)
-        .timeout(Duration(seconds: timeoutSecs ?? _requestTimeout))
-        .then((response) async {
-      // http response statusCode == 200
-      // utf-8 support: https://pub.dev/documentation/http/latest/
-      // for read/readbytes method directly return Uint8List
-      if (response is Uint8List) {
-        return response;
+    try {
+      return Function.apply(requestFnc, [url], namedArguments)
+          .timeout(Duration(seconds: timeoutSecs ?? _requestTimeout),
+              onTimeout: () => throw TimeoutException('The request timed out.'))
+          .then((response) =>
+              _onSuccessCallback(response, needIntercepted: needIntercepted));
+    } on TimeoutException catch (e) {
+      print('Timeout Error: $e');
+      if (_errorInterceptorHandler != null) {
+        _errorInterceptorHandler!(exception: e, silent: silent);
       }
-      var jsonObj = json.decode(utf8.decode(response.bodyBytes));
-      if (jsonObj is! Map) {
-        return jsonObj;
+    } on SocketException catch (e) {
+      print('Connection Error: $e');
+      if (_errorInterceptorHandler != null) {
+        _errorInterceptorHandler!(exception: e, silent: silent);
       }
-      var code = jsonObj["code"];
-      if (code == 0 || !jsonObj.containsKey("code")) {
-        try {
-          return _responseHandler != null
-              ? _responseHandler!(jsonObj)
-              : jsonObj;
-        } catch (e, stackTrace) {
-          print("exception caught: $e \n $stackTrace");
-        }
-        return jsonObj;
+    } catch (e) {
+      throw http.ClientException('An unexpected error occurred: $e');
+    } finally {}
+  }
+
+  Future<dynamic> _onSuccessCallback(response,
+      {bool needIntercepted = true}) async {
+    // http response statusCode == 200
+    // utf-8 support: https://pub.dev/documentation/http/latest/
+    // for read/readbytes method directly return Uint8List
+    if (response is Uint8List) {
+      return response;
+    }
+
+    dynamic jsonObj;
+    try {
+      jsonObj = json.decode(utf8.decode(response.bodyBytes));
+    } catch (ignored) {
+      // non-intercepted request if not Map return bodyBytes
+      if (!needIntercepted) {
+        return utf8.decode(response.bodyBytes);
       }
-      // Throw an exception if code equals RouterHelper.code means to terminate the future chain
-      throw HttpError(code, jsonObj["message"]);
-    });
+    }
+
+    if (jsonObj is! Map) {
+      return jsonObj;
+    }
+    var code = jsonObj["code"];
+    if (code == 0 || !jsonObj.containsKey("code")) {
+      try {
+        return _responseHandler != null ? _responseHandler!(jsonObj) : jsonObj;
+      } catch (e, stackTrace) {
+        print("exception caught: $e \n $stackTrace");
+      }
+      return jsonObj;
+    }
+    // Throw an exception if code equals RouterHelper.code means to terminate the future chain
+    throw HttpError(code, jsonObj["message"]);
   }
 
   /// Add the Authorization header from SharedPreferences to HTTP requests
@@ -509,15 +648,16 @@ class AuthenticatedHttpClient {
       String uu, Map<String, dynamic>? params) {
     // 判断uu中是否存在:id 或 {id}格式
     var adequateConf = {"url": uu, "params": params};
-    if (!uu.split("/").any((path) =>
+    if (params == null ||
+        !uu.split("/").any((path) =>
             path.isNotEmpty &&
-            (path.startsWith(":") || RegExp(r'\{.*?\}').hasMatch(path))) ||
-        params == null) {
+            (path.startsWith(":") || RegExp(r'\{.*?\}').hasMatch(path)))) {
       return adequateConf;
     }
+
     var paramsCopy = Map<String, dynamic>.from(params);
     uu = uu.split("/").map((path) {
-      String keyTmp = path.replaceAll(":", "");
+      String keyTmp = path.replaceAll(RegExp(r'[:{}]'), '');
       if (path.isEmpty ||
           !(path.startsWith(":") || RegExp(r'\{.*?\}').hasMatch(path)) ||
           !params.containsKey(keyTmp) ||
@@ -528,7 +668,8 @@ class AuthenticatedHttpClient {
       paramsCopy.remove(keyTmp);
       return params[keyTmp].toString();
     }).join("/");
-    adequateConf["url"] = uu;
+    adequateConf["url"] =
+        uu.startsWith(RegExp(r'^(/|http[s]?:\/\/)')) ? uu : "/$uu";
     adequateConf["params"] = paramsCopy;
     return adequateConf;
   }
@@ -545,6 +686,8 @@ class AuthenticatedHttpClient {
           encoding: request.encoding,
           formFields: request.formFields,
           timeoutSecs: request.timeoutSecs,
+          authenticate: request.authenticate,
+          onReceiveProgress: request.onReceiveProgress,
           silent: request.silent);
       !request.completer.isCompleted
           ? request.completer.complete(response)
@@ -562,7 +705,7 @@ class AuthenticatedHttpClient {
   /// move on fetch next request in throttling queue
   void _processThrottlingQueue() {
     if (_pendingRequestsOfThrottlingQueue.isNotEmpty &&
-        _activeCount < _MAX_THROTTLING_POOL) {
+        _activeCount < _maxThrottlingNum) {
       final nextRequest = _pendingRequestsOfThrottlingQueue.removeFirst();
       _sendThrottlingQueue(nextRequest);
     }

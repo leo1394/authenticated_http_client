@@ -4,6 +4,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as Math;
+import 'package:authenticated_http_client/authenticated_http_client.dart';
+import 'package:authenticated_http_client/src/map_extension.dart';
 import 'package:http_interceptor/http_interceptor.dart';
 import 'http_error.dart';
 import 'router_helper.dart';
@@ -38,18 +40,26 @@ class HttpRequestInterceptor implements InterceptorContract {
     dynamic request = requestObj ?? dataObj;
     request.headers["charset"] = "UTF-8";
     // symbol silent == true means no underMaintenance and unauthorized login implied by response
-    bool silent = request.headers["_SILENT_"] != null &&
-        request.headers["_SILENT_"] == "true";
+    // intercepted == true means intercepted by AuthenticatedHttpClient interceptResponse
+    // unique id for each request
+    sessionsCached[request.hashCode] = Map<String, dynamic>.from({
+      "silent": request.headers["_SILENT_"] == "true",
+      "requestId": request.headers["X-Request-Id"] ??
+          request.headers["_REQUEST_ID_"] ??
+          "",
+      "intercepted": request.headers["_ICP_REQUEST_"] == "true"
+    });
     request.headers.remove("_SILENT_");
-    // unique request id
-    String requestId = request.headers["X-Request-Id"] ??
-        request.headers["_REQUEST_ID_"] ??
-        "";
+    request.headers.remove("_ICP_REQUEST_");
     request.headers.remove("_REQUEST_ID_");
-    sessionsCached[request.hashCode] = {
+    final {
+      "requestId": requestId,
       "silent": silent,
-      "requestId": requestId
-    };
+      "intercepted": intercepted
+    } = sessionsCached[request.hashCode].destructure();
+    if (!intercepted) {
+      request.headers['X-Skip-Headers'] = 'true';
+    }
     String bodyUtf8Decoded = request is MultipartRequest
         ? request.headers.toString()
         : utf8.decode(request?.bodyBytes);
@@ -72,13 +82,16 @@ class HttpRequestInterceptor implements InterceptorContract {
         sessionsCached[responseObj?.request.hashCode];
     String requestId = (cached?["requestId"] ?? "-") as String;
     bool silent = (cached?["silent"] ?? false) as bool;
+    bool intercepted = (cached?["intercepted"] ?? false) as bool;
     sessionsCached.remove(responseObj?.request.hashCode);
 
     String bodyUtf8Decoded = utf8.decode(response.bodyBytes);
     print(
         "in interceptResponse[$requestId]${silent ? '[silent]' : ''} ====> Headers: ${response?.request.toString()} statusCode: ${response.statusCode} Body: $bodyUtf8Decoded");
 
-    if (response.statusCode == 200 && _isJsonStr(bodyUtf8Decoded)) {
+    if (intercepted &&
+        response.statusCode == 200 &&
+        _isJsonStr(bodyUtf8Decoded)) {
       var responseObj = json.decode(bodyUtf8Decoded);
       if (responseObj != null &&
           responseObj is! List &&
@@ -100,18 +113,41 @@ class HttpRequestInterceptor implements InterceptorContract {
         throw HttpError(responseObj["code"],
             responseObj["message"] ?? "Unauthorized Error");
       }
+
+      if (responseObj != null &&
+          responseObj is! List &&
+          responseObj?["code"] != RouterHelper.successCode) {
+        print("[silent: $silent] Gonna handle failed response ... ");
+        ErrorHttpResponseInterceptorHandler? errorHandler =
+            AuthenticatedHttpClient.getInstance().errorInterceptorHandler;
+        errorHandler != null
+            ? errorHandler(
+                code: responseObj?["code"],
+                message: responseObj?["message"],
+                silent: silent)
+            : null;
+        throw HttpError(responseObj["code"],
+            responseObj["message"] ?? "Failed Request Error");
+      }
       return response;
-    } else if (response.statusCode == 200 && !_isJsonStr(bodyUtf8Decoded)) {
+    } else if (intercepted &&
+        response.statusCode == 200 &&
+        !_isJsonStr(bodyUtf8Decoded)) {
       String description = bodyUtf8Decoded.isNotEmpty
           ? bodyUtf8Decoded
               .substring(0, Math.min(55, bodyUtf8Decoded.length))
               .replaceAll("\n", "\t")
           : "Bad request, try it later! ";
       throw HttpError(HttpError.RESPONSE_FORMAT_ERROR, description);
-    } else if (response.statusCode == RouterHelper.unAuthStatusCode) {
+    } else if (intercepted &&
+        response.statusCode == RouterHelper.unAuthStatusCode) {
       print("[silent: $silent] Gonna jump to login page ... ");
       !silent ? RouterHelper.unAuth(statusCode: response.statusCode) : null;
       throw HttpError(response.statusCode, "Unauthorized Error");
+    } else if (!intercepted && response.statusCode == 200) {
+      return response;
+    } else if (!intercepted) {
+      return response;
     }
     String description = bodyUtf8Decoded.length > 100
         ? "Bad request, try it later! "

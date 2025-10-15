@@ -1,3 +1,11 @@
+## 0.2.6
+- bug fixed for path params resolve /task/{id}
+- support ErrorHttpResponseInterceptorHandler handling fail response or exception caught
+- support `authenticate` config for request
+- support `maxThrottlingNum` config for client init
+- support `onReceiveProgress` for download request 
+- tiny tuned for download and upload request 
+
 ## 0.2.5
 - tiny tuned
 

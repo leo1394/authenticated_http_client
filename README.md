@@ -37,7 +37,7 @@
 flutter pub add authenticated_http_client
 ```
 
-## 用法演示
+## 快速上手
 - 获取 `auth_token` 并将其保存到 `AuthenticatedHttpClient` 的缓存中。
 ```dart
     var apiService = AuthenticatedHttpClient.getInstance().factory({ "login"  : "POST /api/sign-in" });
@@ -59,6 +59,30 @@ flutter pub add authenticated_http_client
     apiService.requestName().then((response) {/* success */}).catchError((e, stackTrace){ /* fail */ }).whenComplete((){ /* finally */ });
     apiService.requestNameWithColonParams({"id": 9527}).then((response) {/* success */}).catchError((e, stackTrace){ /* fail */ }).whenComplete((){ /* finally */ });
     apiService.requestNameWithBraceParams({"id": 9527}).then((response) {/* success */}).catchError((e, stackTrace){ /* fail */ }).whenComplete((){ /* finally */ });
+```
+
+- 上传文件请求
+```dart
+    var apiService = AuthenticatedHttpClient.getInstance().factory({
+        "uploadFile"         : "UP /api/file" 
+    });
+    String localPath = "/local/path/for/upload";
+    apiService.uploadFile({"file": localPath}, throttling: true).then((response) {/* success */}).catchError((e, stackTrace){ /* fail */ }).whenComplete((){ /* finally */ });
+```
+
+- 下载文件请求
+```dart
+    String url = "https://assets.xxx.com/path/of/file"; // 或者 /static/file
+
+    var apiService = AuthenticatedHttpClient.getInstance().factory({
+        "download"         : "DOWN $downloadUrl" 
+    });
+    void onReceiveProgress(int received, int total) {
+      print("Downloading Progress $received/$total");
+    }
+    String savePath = "/local/path/for/download";
+    // 如果不需要身份校验，可以设置authed: false
+    apiService.download(null, savePath: savePath, authenticate: false, onReceiveProgress: onReceiveProgress).then((bytes) {/* success */}).catchError((e, stackTrace){ /* fail */ }).whenComplete((){ /* finally */ });
 ```
 
 - `mock` 请求将从 `mockDirectory`（默认 `/lib/mock`）中的 JSON 文件加载。可通过 `AuthenticatedHttpClient.getInstance().init()` 配置 `mockDirectory`，并需在 `pubspec.yaml` 的 assets 段落中声明。

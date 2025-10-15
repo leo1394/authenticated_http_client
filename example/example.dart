@@ -34,7 +34,9 @@ void main() {
     "mockRequest":
         "MOCK POST /api/task/config", // mock from _post_api_task_config.json under mockDirectory /lib/mock
     "silentRequest":
-        "SILENT GET /api/message/check/unread" // silent request won't jump when response met unauthorized or under maintenance
+        "SILENT GET /api/message/check/unread", // silent request won't jump when response met unauthorized or under maintenance
+    "download": "DOWN https://assets.xxx.com/path/of/file",
+    "uploadFile": "UP /api/file"
   });
 
   apiService
@@ -46,6 +48,26 @@ void main() {
   apiService.requestName().then((response) {/* success */}).catchError(
       (e, stackTrace) {/* fail */}).whenComplete(() {/* finally */});
   apiService.requestNameWithParams({"id": 9527}).then((response) {
+    /* success */
+  }).catchError((e, stackTrace) {/* fail */}).whenComplete(() {/* finally */});
+
+  void onReceiveProgress(int received, int total) {
+    print("Downloading Progress $received/$total");
+  }
+
+  String savePath = "/local/path/for/download";
+  // if Authorization is not required, set authenticate: false
+  apiService
+      .download(null,
+          savePath: savePath,
+          authenticate: false,
+          onReceiveProgress: onReceiveProgress)
+      .then((bytes) {/* success */}).catchError((e, stackTrace) {
+    /* fail */
+  }).whenComplete(() {/* finally */});
+
+  String localPath = "/local/path/for/upload";
+  apiService.uploadFile({"file": localPath}, throttling: true).then((response) {
     /* success */
   }).catchError((e, stackTrace) {/* fail */}).whenComplete(() {/* finally */});
 

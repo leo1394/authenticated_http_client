@@ -62,6 +62,31 @@ flutter pub add authenticated_http_client
     apiService.requestNameWithBraceParams({"id": 9527}).then((response) {/* success */}).catchError((e, stackTrace){ /* fail */ }).whenComplete((){ /* finally */ });
 ```
 
+
+- `UP` request uploads a file.
+```dart
+    var apiService = AuthenticatedHttpClient.getInstance().factory({
+        "uploadFile"         : "UP /api/file" 
+    });
+    String localPath = "/local/path/for/upload";
+    apiService.uploadFile({"file": localPath}, throttling: true).then((response) {/* success */}).catchError((e, stackTrace){ /* fail */ }).whenComplete((){ /* finally */ });
+```
+
+- `DOWN` request downloads a file.
+```dart
+    String url = "https://assets.xxx.com/path/of/file"; // or /static/file
+    
+    var apiService = AuthenticatedHttpClient.getInstance().factory({
+        "download"         : "DOWN $url" 
+    });
+    void onReceiveProgress(int received, int total) {
+      print("Downloading Progress $received/$total");
+    }
+    String savePath = "/local/path/for/download";
+    // if Authorization is not required, set authenticate: false
+    apiService.download(null, savePath: savePath, authenticate: false, onReceiveProgress: onReceiveProgress).then((bytes) {/* success */}).catchError((e, stackTrace){ /* fail */ }).whenComplete((){ /* finally */ });
+```
+
 - Mock requests are served from JSON files in the mockDirectory (defaulting to /lib/mock), which can be configured via AuthenticatedHttpClient.getInstance().init() and need to be declared under assets section in pubspec.yaml.
 ```dart
     var apiService = AuthenticatedHttpClient.getInstance().factory({
