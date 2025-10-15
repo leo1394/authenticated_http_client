@@ -13,7 +13,6 @@ class RouterHelper {
   static int? _maintenanceCode;
   static Function? _onJump2Login;
   static Function? _onJump2UnderMaintenance;
-  static Function? _onErrorInterceptorHandler;
 
   /// initialize function
   ///

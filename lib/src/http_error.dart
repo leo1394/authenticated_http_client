@@ -1,6 +1,7 @@
 // Copyright (c) 2025, the Dart project authors. Use of this source code
 // is governed by a MIT license that can be found in the LICENSE file.
 
+/// default enumerate error for http response
 class HttpError extends Error {
   static const int RESPONSE_FORMAT_ERROR = 102;
   static const int UNAUTHORIZED = 401;

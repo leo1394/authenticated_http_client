@@ -3,7 +3,7 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math' as Math;
+import 'dart:math';
 import 'package:authenticated_http_client/authenticated_http_client.dart';
 import 'package:authenticated_http_client/src/map_extension.dart';
 import 'package:http_interceptor/http_interceptor.dart';
@@ -106,8 +106,7 @@ class HttpRequestInterceptor implements InterceptorContract {
       }
       if (responseObj != null &&
           responseObj is! List &&
-          (RouterHelper.unAuthCode as List<int>)
-              .contains(responseObj?["code"])) {
+          RouterHelper.unAuthCode.contains(responseObj?["code"])) {
         print("[silent: $silent] Gonna jump to login page ... ");
         !silent ? RouterHelper.unAuth(code: responseObj?["code"]) : null;
         throw HttpError(responseObj["code"],
@@ -135,7 +134,7 @@ class HttpRequestInterceptor implements InterceptorContract {
         !_isJsonStr(bodyUtf8Decoded)) {
       String description = bodyUtf8Decoded.isNotEmpty
           ? bodyUtf8Decoded
-              .substring(0, Math.min(55, bodyUtf8Decoded.length))
+              .substring(0, min(55, bodyUtf8Decoded.length))
               .replaceAll("\n", "\t")
           : "Bad request, try it later! ";
       throw HttpError(HttpError.RESPONSE_FORMAT_ERROR, description);
