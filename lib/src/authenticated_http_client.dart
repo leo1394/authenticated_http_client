@@ -4,12 +4,12 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
-import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http_interceptor/http_interceptor.dart';
 import 'package:universal_io/io.dart';
+import 'package:extension_dart/utils.dart';
 import 'http_error.dart';
 import 'http_request_interceptor.dart';
 import 'http_headers_interceptor.dart';
@@ -43,8 +43,6 @@ typedef ErrorHttpResponseInterceptorHandler = void Function(
 ///
 class AuthenticatedHttpClient {
   static const String _authTokenCacheKey = "-cached-authorization";
-  static const String _alphabet =
-      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   static String baseUrl = "";
   static String _host = "";
   static int _requestTimeout = 45; // timeout for http request in seconds
@@ -543,7 +541,7 @@ class AuthenticatedHttpClient {
         authenticate || baseUrl.isEmpty || url.toString().startsWith(baseUrl);
     headers = headers ?? {};
     headers.putIfAbsent("_SILENT_", () => silent.toString());
-    headers.putIfAbsent("_REQUEST_ID_", () => requestId ?? _generateReqId());
+    headers.putIfAbsent("_REQUEST_ID_", () => requestId ?? Utils.fastUUID());
     headers.putIfAbsent("_ICP_REQUEST_", () => needIntercepted.toString());
     Map<Symbol, dynamic> namedArguments = {
       const Symbol("headers"): headers,
@@ -721,14 +719,5 @@ class AuthenticatedHttpClient {
       return <String,
           dynamic>{}; // Return an empty JSON object in case of an error
     }
-  }
-
-  /// generate _REQUEST_ID from alphabet
-  String _generateReqId() {
-    final Random rand = Random();
-    return String.fromCharCodes(
-      List<int>.generate(
-          16, (_) => _alphabet.codeUnitAt(rand.nextInt(_alphabet.length))),
-    );
   }
 }

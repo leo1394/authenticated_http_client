@@ -3,7 +3,7 @@ description: An advanced authenticated HTTP client introduces `factory` feature 
 homepage: https://github.com/leo1394/authenticated_http_client
 repository: https://github.com/leo1394/authenticated_http_client
 issue_tracker: https://github.com/leo1394/authenticated_http_client/issues
-version: 0.2.6
+version: 0.2.7
 environment:
   sdk: '>=3.0.0 <4.0.0'
 
@@ -14,6 +14,7 @@ dependencies:
   shared_preferences: ^2.4.0
   http_interceptor: ^2.0.0
   universal_io: ^2.2.2
+  extension_dart: ^1.0.1
 
 dev_dependencies:
   lints: ^5.0.0

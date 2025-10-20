@@ -5,8 +5,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:authenticated_http_client/authenticated_http_client.dart';
-import 'package:authenticated_http_client/src/map_extension.dart';
 import 'package:http_interceptor/http_interceptor.dart';
+import 'package:extension_dart/extensions.dart';
 import 'http_error.dart';
 import 'router_helper.dart';
 

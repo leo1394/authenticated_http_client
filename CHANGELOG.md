@@ -1,3 +1,6 @@
+## 0.2.7
+- tiny tuned
+
 ## 0.2.6
 - bug fixed for path params resolve /task/{id}
 - support ErrorHttpResponseInterceptorHandler handling fail response or exception caught
