@@ -91,7 +91,7 @@ flutter pub add authenticated_http_client
         "mockRequest"           : "MOCK POST /api/task/config", 
     });
 
-    // 将从 mockDirectory /lib/mock 下的 _post_api_task_config.json 读取模拟数据
+    // 将从 mockDirectory /lib/mock 下的 _POST_api_task_config.json 读取模拟数据
     apiService.mockRequest().then((response) {/* success */}).catchError((e, stackTrace){ /* fail */ }).whenComplete((){ /* finally */ });
 ```
 

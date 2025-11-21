@@ -3,7 +3,7 @@ description: An advanced authenticated HTTP client introduces `factory` feature 
 homepage: https://github.com/leo1394/authenticated_http_client
 repository: https://github.com/leo1394/authenticated_http_client
 issue_tracker: https://github.com/leo1394/authenticated_http_client/issues
-version: 0.2.7
+version: 0.2.8
 environment:
   sdk: '>=3.0.0 <4.0.0'
 

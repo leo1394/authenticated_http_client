@@ -190,9 +190,20 @@ class AuthenticatedHttpClient {
         // support mock data, response for mock request
         if (mock) {
           String filename =
-              "_${method}_${uu.replaceAll("/", "_").replaceAll(RegExp(r'[{:}]'), "")}";
+              "_${method}_${uu.replaceAll("/", "_").replaceAll(RegExp(r'[{:}]'), "")}"
+                  .replaceAll("__", "_");
           String filepath = [_mockDirectory, "$filename.json"].join("/");
-          final response = await _readJsonFile(filepath);
+          dynamic response;
+          try {
+            response = await _readJsonFile(filepath);
+          } catch (e) {
+            if (filename.startsWith("_GET_")) {
+              response = await _readJsonFile(filepath.replaceAll("_GET_", "_"));
+            } else {
+              throw http.ClientException('An unexpected error occurred: $e');
+            }
+          }
+
           print(
               "in interceptRequest ==> $baseUrl$uu, $params $paramsUnnamed \t MOCK response from local json file: $filepath, response ==> $response");
           return response;
@@ -711,13 +722,7 @@ class AuthenticatedHttpClient {
 
   /// Mocking requests by reading from a local JSON file
   Future<Map<String, dynamic>> _readJsonFile(String filePath) async {
-    try {
-      final content = await rootBundle.loadString(filePath);
-      return jsonDecode(content);
-    } catch (e, stackTrace) {
-      print('Error reading JSON file: $e \n $stackTrace');
-      return <String,
-          dynamic>{}; // Return an empty JSON object in case of an error
-    }
+    final content = await rootBundle.loadString(filePath);
+    return jsonDecode(content);
   }
 }

@@ -19,7 +19,7 @@ class HttpRequestInterceptor implements InterceptorContract {
     Request requestData = request as Request;
     try {
       request.headers["Content-Type"] =
-          !_isJsonStr(request.body) && _isKeyValueQuery(request.body)
+          !request.body.isJson && _isKeyValueQuery(request.body)
               ? "application/x-www-form-urlencoded"
               : "application/json";
       request = await naiveInterceptRequest(dataObj: requestData);
@@ -89,9 +89,7 @@ class HttpRequestInterceptor implements InterceptorContract {
     print(
         "in interceptResponse[$requestId]${silent ? '[silent]' : ''} ====> Headers: ${response?.request.toString()} statusCode: ${response.statusCode} Body: $bodyUtf8Decoded");
 
-    if (intercepted &&
-        response.statusCode == 200 &&
-        _isJsonStr(bodyUtf8Decoded)) {
+    if (intercepted && response.statusCode == 200 && bodyUtf8Decoded.isJson) {
       var responseObj = json.decode(bodyUtf8Decoded);
       if (responseObj != null &&
           responseObj is! List &&
@@ -131,7 +129,7 @@ class HttpRequestInterceptor implements InterceptorContract {
       return response;
     } else if (intercepted &&
         response.statusCode == 200 &&
-        !_isJsonStr(bodyUtf8Decoded)) {
+        !bodyUtf8Decoded.isJson) {
       String description = bodyUtf8Decoded.isNotEmpty
           ? bodyUtf8Decoded
               .substring(0, min(55, bodyUtf8Decoded.length))
@@ -152,15 +150,6 @@ class HttpRequestInterceptor implements InterceptorContract {
         ? "Bad request, try it later! "
         : bodyUtf8Decoded;
     throw HttpError(response.statusCode, description);
-  }
-
-  bool _isJsonStr(String str) {
-    try {
-      json.decode(str);
-      return true;
-    } catch (e) {
-      return false;
-    }
   }
 
   bool _isKeyValueQuery(String str) {

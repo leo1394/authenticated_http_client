@@ -93,7 +93,7 @@ flutter pub add authenticated_http_client
         "mockRequest"           : "MOCK POST /api/task/config", 
     });
 
-    // mock from _post_api_task_config.json under mockDirectory /lib/mock
+    // mock from _POST_api_task_config.json under mockDirectory /lib/mock
     apiService.mockRequest().then((response) {/* success */}).catchError((e, stackTrace){ /* fail */ }).whenComplete((){ /* finally */ });
 ```
 
