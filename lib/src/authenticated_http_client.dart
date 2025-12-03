@@ -37,7 +37,7 @@ typedef ErrorHttpResponseInterceptorHandler = void Function(
 ///    ajaxApis.requestName().then().catchError().whenComplete()
 ///    ajaxApis.requestNameWithParams({"id": 9527}).then().catchError().whenComplete()
 ///
-/// 3. AuthenticatedHttpClient.all(futures).then((results){ /* results['0'] */}).catchError().whenComplete()
+/// 3. AuthenticatedHttpClient.all(futures).then((List<dynamic> results){ /* print(results[0]) */}).catchError().whenComplete()
 ///
 /// 4. AuthenticatedHttpClient.getInstance().get(uri).then().catchError().whenComplete()
 ///
@@ -272,38 +272,48 @@ class AuthenticatedHttpClient {
   /// The `anyCompleteCallback` optional argument specifies a custom Function for processing
   /// responses when any of `futures` requests completed
   ///
+  /// The `anySuccessCallback` optional argument specifies a custom Function for processing
+  /// responses when any of `futures` requests succeed
+  ///
   /// The `anyErrorCallback` optional argument specifies a custom Function for processing
   /// responses when any of `futures` requests failed
   ///
   /// The `delayMillis` optional argument specifies a delay in milliseconds to prevent
   /// potential server concurrency issues. defaulting to `0`
   ///
-  static Future<dynamic> all(List<dynamic> futures,
+  static Future<List<dynamic>> all(List<dynamic> futures,
       {Function? anyCompleteCallback,
+      Function? anySuccessCallback,
       Function? anyErrorCallback,
       int delayMillis = 0}) {
     int taskCompleted = 0;
     Map<String, dynamic> results = {};
-    var completer = Completer();
+    var completer = Completer<List<dynamic>>();
     for (int i = 0; i < futures.length; i++) {
       futures[i].then((resp) {
         results[i.toString()] = resp;
+        try {
+          anySuccessCallback?.call(resp, results);
+        } catch (e) {
+          print("Exception Caught! $e");
+        }
       }).catchError((e, stackTrace) {
         try {
-          anyErrorCallback != null ? anyErrorCallback(e, stackTrace) : null;
+          anyErrorCallback?.call(e, stackTrace);
         } catch (e) {
           print("Exception Caught! $e");
         }
       }).whenComplete(() {
         taskCompleted++;
-        if (anyCompleteCallback != null) {
-          try {
-            anyCompleteCallback(results);
-          } catch (e, stackTrace) {
-            print("exception caught: $e \n $stackTrace");
-          }
+        try {
+          anyCompleteCallback?.call(results);
+        } catch (e, stackTrace) {
+          print("exception caught: $e \n $stackTrace");
         }
-        taskCompleted >= futures.length ? completer.complete(results) : null;
+        if (taskCompleted >= futures.length) {
+          completer.complete(
+              List.generate(futures.length, (i) => results[i.toString()]));
+        }
       });
       delayMillis >= 0
           ? sleep(Duration(milliseconds: delayMillis))

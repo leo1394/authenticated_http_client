@@ -133,9 +133,9 @@ flutter pub add authenticated_http_client
     });
 
     List<Future> futures = [apiService.requestName(), apiService.requestNameWithParams({"id": 9528})];
-    AuthenticatedHttpClient.all(futures, delayInMilliSecs: 350).then((results){
-        print(results['0']); // 第 1 个请求的响应
-        print(results['1']); // 第 2 个请求的响应
+    AuthenticatedHttpClient.all(futures, delayInMilliSecs: 350).then((List<dynamic> results){
+        print(results[0]); // 第 1 个请求的响应
+        print(results[1]); // 第 2 个请求的响应
     });
 ```
 

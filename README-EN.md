@@ -135,9 +135,9 @@ flutter pub add authenticated_http_client
     });
 
     List<Future> futures = [apiService.requestName(), apiService.requestNameWithParams({"id": 9528})];
-    AuthenticatedHttpClient.all(futures, delayInMilliSecs: 350).then((results){
-        print(results['0']); // response of No.1 request
-        print(results['1']); // response of No.2 request
+    AuthenticatedHttpClient.all(futures, delayInMilliSecs: 350).then((List<dynamic> results){
+        print(results[0]); // response of No.1 request
+        print(results[1]); // response of No.2 request
     });
 ```
 

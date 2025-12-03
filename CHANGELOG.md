@@ -1,3 +1,6 @@
+## 0.2.9
+- tiny tuned for `all`
+
 ## 0.2.8
 - tiny tuned
 

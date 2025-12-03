@@ -78,7 +78,7 @@ void main() {
     apiService.requestNameWithParams({"id": 9528})
   ];
   AuthenticatedHttpClient.all(futures, delayMillis: 350).then((results) {
-    print(results['0']); // response of No.1 request
-    print(results['1']); // response of No.2 request
+    print(results[0]); // response of No.1 request
+    print(results[1]); // response of No.2 request
   });
 }
