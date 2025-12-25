@@ -255,7 +255,7 @@ class AuthenticatedHttpClient {
   }
 
   /// Setter for the authentication token in an Authenticated HTTP Client
-  void setAuthToken(String token) async {
+  Future<void> setAuthToken(String token) async {
     SharedPreferences prefs = await _sharedPrefsFuture;
     prefs.setString(_authTokenCacheKey, token);
   }
