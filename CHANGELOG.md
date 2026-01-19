@@ -1,3 +1,9 @@
+## 0.2.11
+- support request-id header config
+
+## 0.2.10
+- tiny tuned for `all`
+
 ## 0.2.9
 - tiny tuned for `all`
 

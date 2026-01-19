@@ -47,6 +47,8 @@ class AuthenticatedHttpClient {
   static String _host = "";
   static int _requestTimeout = 45; // timeout for http request in seconds
   static int _maxThrottlingNum = 10; // max throttling limit for requests
+  static String _requestIdHeaderKey =
+      "_REQUEST_ID_"; // inner request id in default
   Function? _responseHandler;
   String? _mockDirectory; // mock data directory
   final Queue<HttpRequestTask> _pendingRequestsOfThrottlingQueue = Queue();
@@ -88,15 +90,14 @@ class AuthenticatedHttpClient {
   /// The timeoutSecs optional argument, defaulting to 45 seconds, specifies HTTP
   /// request timeout in seconds.
   ///
-  void init(
-    String origin, {
-    Function? responseHandler,
-    HttpHeadersInterceptor? customHttpHeadersInterceptor,
-    ErrorHttpResponseInterceptorHandler? errorInterceptorHandler,
-    String mockDirectory = "lib/mock",
-    int maxThrottlingNum = 10,
-    int? timeoutSecs,
-  }) {
+  void init(String origin,
+      {Function? responseHandler,
+      HttpHeadersInterceptor? customHttpHeadersInterceptor,
+      ErrorHttpResponseInterceptorHandler? errorInterceptorHandler,
+      String mockDirectory = "lib/mock",
+      int maxThrottlingNum = 10,
+      int? timeoutSecs,
+      String? requestIdHeader}) {
     assert(origin.isNotEmpty, "url cannot be empty!");
     print("in AuthenticatedHttpClient base change to $origin ...");
     origin = origin.replaceAll(RegExp(r'\/$'), "");
@@ -104,14 +105,20 @@ class AuthenticatedHttpClient {
         ? origin
         : Uri.https(origin).origin;
     _host = Uri.parse(baseUrl).host;
+    _maxThrottlingNum = maxThrottlingNum;
 
-    List<InterceptorContract?> interceptors = [
-      HttpRequestInterceptor(),
-      customHttpHeadersInterceptor
-    ];
     if (!_isInnerInitialized) {
+      List<InterceptorContract?> interceptors = [
+        HttpRequestInterceptor(),
+        customHttpHeadersInterceptor
+      ];
+      _responseHandler = responseHandler;
+      _mockDirectory = mockDirectory;
       _requestTimeout = timeoutSecs ?? _requestTimeout;
       _errorInterceptorHandler = errorInterceptorHandler;
+      _requestIdHeaderKey = (requestIdHeader == null || requestIdHeader.isEmpty)
+          ? "_REQUEST_ID_"
+          : requestIdHeader;
       _isInnerInitialized = true;
       _inner = InterceptedClient.build(
         interceptors: interceptors
@@ -121,9 +128,6 @@ class AuthenticatedHttpClient {
         requestTimeout: Duration(seconds: _requestTimeout),
       );
     }
-    _maxThrottlingNum = maxThrottlingNum;
-    _responseHandler = responseHandler;
-    _mockDirectory = mockDirectory;
   }
 
   /// A factory function that generates AJAX request functions by api URI name in WYSIWYG style,
@@ -561,8 +565,16 @@ class AuthenticatedHttpClient {
     bool needIntercepted =
         authenticate || baseUrl.isEmpty || url.toString().startsWith(baseUrl);
     headers = headers ?? {};
+    String requestIdValue = requestId ?? Utils.fastUUID();
     headers.putIfAbsent("_SILENT_", () => silent.toString());
-    headers.putIfAbsent("_REQUEST_ID_", () => requestId ?? Utils.fastUUID());
+    headers.putIfAbsent(
+        "_REQUEST_ID_",
+        () =>
+            requestIdValue); // for temporary purpose and would be deleted before sent.
+    if (_requestIdHeaderKey.isNotEmpty &&
+        _requestIdHeaderKey != "_REQUEST_ID_") {
+      headers.putIfAbsent(_requestIdHeaderKey, () => requestIdValue);
+    }
     headers.putIfAbsent("_ICP_REQUEST_", () => needIntercepted.toString());
     Map<Symbol, dynamic> namedArguments = {
       const Symbol("headers"): headers,
