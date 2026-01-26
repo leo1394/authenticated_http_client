@@ -47,8 +47,7 @@ class AuthenticatedHttpClient {
   static String _host = "";
   static int _requestTimeout = 45; // timeout for http request in seconds
   static int _maxThrottlingNum = 10; // max throttling limit for requests
-  static String _requestIdHeaderKey =
-      "_REQUEST_ID_"; // inner request id in default
+  static String _requestIdHeaderKey = "X-Request-Id"; // request id in default
   Function? _responseHandler;
   String? _mockDirectory; // mock data directory
   final Queue<HttpRequestTask> _pendingRequestsOfThrottlingQueue = Queue();
@@ -116,9 +115,7 @@ class AuthenticatedHttpClient {
       _mockDirectory = mockDirectory;
       _requestTimeout = timeoutSecs ?? _requestTimeout;
       _errorInterceptorHandler = errorInterceptorHandler;
-      _requestIdHeaderKey = (requestIdHeader == null || requestIdHeader.isEmpty)
-          ? "_REQUEST_ID_"
-          : requestIdHeader;
+      _requestIdHeaderKey = requestIdHeader ?? "X-Request-Id";
       _isInnerInitialized = true;
       _inner = InterceptedClient.build(
         interceptors: interceptors
@@ -494,7 +491,6 @@ class AuthenticatedHttpClient {
     String pathOfFile = params.entries.first.value as String;
     File file = File(pathOfFile);
     if (fileFieldName.isEmpty ||
-        pathOfFile.split(" ").length > 1 ||
         !pathOfFile.startsWith("/") ||
         !file.existsSync()) {
       response = http.Response(
@@ -567,6 +563,7 @@ class AuthenticatedHttpClient {
     headers = headers ?? {};
     String requestIdValue = requestId ?? Utils.fastUUID();
     headers.putIfAbsent("_SILENT_", () => silent.toString());
+    headers.putIfAbsent("_ICP_REQUEST_", () => needIntercepted.toString());
     headers.putIfAbsent(
         "_REQUEST_ID_",
         () =>
@@ -575,7 +572,6 @@ class AuthenticatedHttpClient {
         _requestIdHeaderKey != "_REQUEST_ID_") {
       headers.putIfAbsent(_requestIdHeaderKey, () => requestIdValue);
     }
-    headers.putIfAbsent("_ICP_REQUEST_", () => needIntercepted.toString());
     Map<Symbol, dynamic> namedArguments = {
       const Symbol("headers"): headers,
       const Symbol("authenticate"): authenticate

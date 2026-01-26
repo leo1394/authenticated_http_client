@@ -1,3 +1,6 @@
+## 0.2.12
+- support space in local file path during uploading
+
 ## 0.2.11
 - support request-id header config
 
