@@ -191,12 +191,12 @@ class AuthenticatedHttpClient {
           bool throttling = false}) async {
         // support mock data, response for mock request
         if (mock) {
-          dynamic adequateConf =
-              _pathParamsResolver(uu, Map<String, dynamic>.from(params ?? {}));
+          dynamic adequateConf = _pathParamsResolver(
+              uu, Map<String, dynamic>.from(paramsUnnamed ?? {}));
           List<String> potentialFilePaths = [adequateConf["url"], uu]
               .unique()
               .map((path) =>
-                  "_${method}_${uu.replaceAll("/", "_").replaceAll(RegExp(r'[{:}]'), "")}"
+                  "_${method}_${path.replaceAll("/", "_").replaceAll(RegExp(r'[{:}]'), "")}"
                       .replaceAll("__", "_"))
               .map((filename) => [_mockDirectory, "$filename.json"].join("/"))
               .toList();
