@@ -1,3 +1,6 @@
+## 0.2.13
+- adaptive support for mock request path with path params like /api/plan/:id/details or /api/plan/{id}/details
+
 ## 0.2.12
 - support space in local file path during uploading
 

@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
+import 'package:extension_dart/extensions.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -190,23 +191,42 @@ class AuthenticatedHttpClient {
           bool throttling = false}) async {
         // support mock data, response for mock request
         if (mock) {
-          String filename =
-              "_${method}_${uu.replaceAll("/", "_").replaceAll(RegExp(r'[{:}]'), "")}"
-                  .replaceAll("__", "_");
-          String filepath = [_mockDirectory, "$filename.json"].join("/");
+          dynamic adequateConf =
+              _pathParamsResolver(uu, Map<String, dynamic>.from(params ?? {}));
+          List<String> potentialFilePaths = [adequateConf["url"], uu]
+              .unique()
+              .map((path) =>
+                  "_${method}_${uu.replaceAll("/", "_").replaceAll(RegExp(r'[{:}]'), "")}"
+                      .replaceAll("__", "_"))
+              .map((filename) => [_mockDirectory, "$filename.json"].join("/"))
+              .toList();
+          final List<String> candidates = [];
+          for (final path in potentialFilePaths) {
+            candidates.add(path);
+            if (path.contains("/_GET_")) {
+              candidates.add(path.replaceAll("_GET_", "_"));
+            }
+          }
           dynamic response;
-          try {
-            response = await _readJsonFile(filepath);
-          } catch (e) {
-            if (filename.startsWith("_GET_")) {
-              response = await _readJsonFile(filepath.replaceAll("_GET_", "_"));
-            } else {
-              throw http.ClientException('An unexpected error occurred: $e');
+          for (final filepath in candidates) {
+            try {
+              response = await _readJsonFile(filepath);
+              print(
+                  "Mock json file found for request: $uu, file path: $filepath");
+              break;
+            } catch (_) {
+              // Continue to next candidate if file is missing or invalid
+              continue;
             }
           }
 
+          if (response == null) {
+            throw http.ClientException(
+                'Mock json file not found for request: $uu, tried paths: $candidates');
+          }
+
           print(
-              "in interceptRequest ==> $baseUrl$uu, $params $paramsUnnamed \t MOCK response from local json file: $filepath, response ==> $response");
+              "in interceptRequest ==> $baseUrl$uu, $params $paramsUnnamed, response ==> $response");
           return response;
         }
         // allow Map parameters in default Map<dynamic, dynamic>
