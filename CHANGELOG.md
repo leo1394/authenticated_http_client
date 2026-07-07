@@ -1,3 +1,6 @@
+## 0.2.15
+- Add vibe coding agent context for Codex, Claude, Cursor, and Copilot.
+
 ## 0.2.14
 - tiny tuned for `mock`
 

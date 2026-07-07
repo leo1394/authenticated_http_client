@@ -38,7 +38,7 @@ typedef ErrorHttpResponseInterceptorHandler = void Function(
 ///    ajaxApis.requestName().then().catchError().whenComplete()
 ///    ajaxApis.requestNameWithParams({"id": 9527}).then().catchError().whenComplete()
 ///
-/// 3. AuthenticatedHttpClient.all(futures).then((List<dynamic> results){ /* print(results[0]) */}).catchError().whenComplete()
+/// 3. AuthenticatedHttpClient.all(futures).then((`List<dynamic>` results){ /* print(results[0]) */}).catchError().whenComplete()
 ///
 /// 4. AuthenticatedHttpClient.getInstance().get(uri).then().catchError().whenComplete()
 ///
@@ -644,7 +644,7 @@ class AuthenticatedHttpClient {
     } finally {}
   }
 
-  Future<dynamic> _onSuccessCallback(response,
+  Future<dynamic> _onSuccessCallback(dynamic response,
       {bool needIntercepted = true}) async {
     // http response statusCode == 200
     // utf-8 support: https://pub.dev/documentation/http/latest/

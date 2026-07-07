@@ -1,0 +1,7 @@
+---
+description: authenticated_http_client usage context
+globs: **/*.dart
+alwaysApply: false
+---
+
+When using `authenticated_http_client`, prefer `AuthenticatedHttpClient.getInstance().factory({...})` with WYSIWYG API strings like `SILENT GET /api/plan/:id/details`, `MOCK POST /api/task/config`, `UP /api/file`, or `DOWN /asset.zip`. Initialize `RouterHelper` and `AuthenticatedHttpClient.init(...)` once at app startup. Put common headers in `HttpHeadersInterceptor`; set login token with `setAuthToken`.
