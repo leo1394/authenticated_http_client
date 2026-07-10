@@ -45,7 +45,6 @@ typedef ErrorHttpResponseInterceptorHandler = void Function(
 class AuthenticatedHttpClient {
   static const String _authTokenCacheKey = "-cached-authorization";
   static String baseUrl = "";
-  static String _host = "";
   static int _requestTimeout = 45; // timeout for http request in seconds
   static int _maxThrottlingNum = 10; // max throttling limit for requests
   static String _requestIdHeaderKey = "X-Request-Id"; // request id in default
@@ -104,7 +103,6 @@ class AuthenticatedHttpClient {
     baseUrl = origin.startsWith('http://') || origin.startsWith('https://')
         ? origin
         : Uri.https(origin).origin;
-    _host = Uri.parse(baseUrl).host;
     _maxThrottlingNum = maxThrottlingNum;
 
     if (!_isInnerInitialized) {
@@ -572,11 +570,8 @@ class AuthenticatedHttpClient {
     dynamic adequateConf = _pathParamsResolver(uu, params);
     uu = adequateConf["url"];
     params = adequateConf["params"];
-    var url = uu.startsWith("http")
-        ? Uri.parse(uu)
-        : (baseUrl.startsWith("http://")
-            ? Uri.http(_host, uu)
-            : Uri.https(_host, uu));
+    var url =
+        uu.startsWith("http") ? Uri.parse(uu) : Uri.parse(baseUrl).resolve(uu);
     Function requestFnc = _httpMethodMapper[method]!;
     bool needIntercepted =
         authenticate || baseUrl.isEmpty || url.toString().startsWith(baseUrl);
@@ -597,12 +592,12 @@ class AuthenticatedHttpClient {
       const Symbol("authenticate"): authenticate
     };
     if (method == "get" || method == "head") {
-      Function resolveFnc =
-          baseUrl.startsWith("http://") ? Uri.http : Uri.https;
       var paramsTmp = (params == null || params.isEmpty)
           ? null
           : params.map((key, value) => MapEntry(key, value.toString()));
-      url = resolveFnc(url.host, url.path, paramsTmp);
+      var queryParameters = Map<String, String>.from(url.queryParameters);
+      queryParameters.addAll(paramsTmp ?? {});
+      url = url.replace(queryParameters: queryParameters);
     }
     if (method == "post" ||
         method == "put" ||

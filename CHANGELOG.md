@@ -1,3 +1,6 @@
+## 0.2.16
+- support local ip base url  with port specified
+
 ## 0.2.15
 - Add vibe coding agent context for Codex, Claude, Cursor, and Copilot.
 
