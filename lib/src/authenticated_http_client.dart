@@ -56,6 +56,7 @@ class AuthenticatedHttpClient {
   ErrorHttpResponseInterceptorHandler? _errorInterceptorHandler;
   final Future<SharedPreferences> _sharedPrefsFuture;
   late final http.Client _inner;
+  late final HttpRequestInterceptor _httpRequestInterceptor;
   bool _isInnerInitialized = false;
 
   AuthenticatedHttpClient._(this._sharedPrefsFuture);
@@ -106,8 +107,9 @@ class AuthenticatedHttpClient {
     _maxThrottlingNum = maxThrottlingNum;
 
     if (!_isInnerInitialized) {
+      _httpRequestInterceptor = HttpRequestInterceptor();
       List<InterceptorContract?> interceptors = [
-        HttpRequestInterceptor(),
+        _httpRequestInterceptor,
         customHttpHeadersInterceptor
       ];
       _responseHandler = responseHandler;
@@ -223,9 +225,8 @@ class AuthenticatedHttpClient {
                 'Mock json file not found for request: $uu, tried paths: $candidates');
           }
 
-          print(
-              "in interceptRequest ==> $baseUrl$uu, $params $paramsUnnamed, response ==> $response");
-          return response;
+          return _processMockResponse(response, method, adequateConf["url"],
+              headers: headers, requestId: requestId, silent: silent);
         }
         // allow Map parameters in default Map<dynamic, dynamic>
         Map<String, dynamic>? paramsUnnamedFormatted =
@@ -547,6 +548,35 @@ class AuthenticatedHttpClient {
     } catch (e, stackTrace) {
       print("exception caught: $e \n $stackTrace");
     }
+  }
+
+  /// Processes a resource mock through the same built-in response interceptor
+  /// used by real HTTP requests.
+  Future<dynamic> _processMockResponse(
+      dynamic response, String method, String uu,
+      {Map<String, String>? headers,
+      String? requestId,
+      bool silent = false}) async {
+    var url =
+        uu.startsWith("http") ? Uri.parse(uu) : Uri.parse(baseUrl).resolve(uu);
+    var request = http.Request(method.toUpperCase(), url);
+    request.headers.addAll(headers ?? {});
+    String requestIdValue = requestId ?? Utils.fastUUID();
+    request.headers.putIfAbsent("_SILENT_", () => silent.toString());
+    request.headers.putIfAbsent("_ICP_REQUEST_", () => true.toString());
+    request.headers.putIfAbsent("_REQUEST_ID_", () => requestIdValue);
+    if (_requestIdHeaderKey.isNotEmpty &&
+        _requestIdHeaderKey != "_REQUEST_ID_") {
+      request.headers.putIfAbsent(_requestIdHeaderKey, () => requestIdValue);
+    }
+    var interceptedRequest =
+        await _httpRequestInterceptor.interceptRequest(request: request);
+    var mockResponse = http.Response(jsonEncode(response), 200,
+        headers: {"content-type": "application/json; charset=utf-8"},
+        request: interceptedRequest);
+    var interceptedResponse =
+        await _httpRequestInterceptor.interceptResponse(response: mockResponse);
+    return _onSuccessCallback(interceptedResponse, needIntercepted: true);
   }
 
   /// private function sends an HTTP request and asynchronously returns the response.

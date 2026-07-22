@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:authenticated_http_client/authenticated_http_client.dart';
+import 'package:authenticated_http_client/http_error.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:test/test.dart';
@@ -15,6 +16,12 @@ void main() {
     addTearDown(() => server.close(force: true));
     server.listen((request) async {
       request.response.headers.contentType = ContentType.json;
+      if (request.requestedUri.path == "/failure") {
+        request.response
+            .write(jsonEncode({"code": 123, "message": "diagnostic"}));
+        await request.response.close();
+        return;
+      }
       request.response.write(jsonEncode({
         "code": 0,
         "data": {
@@ -28,8 +35,10 @@ void main() {
 
     final client = AuthenticatedHttpClient.getInstance();
     client.init("http://127.0.0.1:${server.port}");
-    final api = client
-        .factory({"localRequest": "GET /health?source=origin&retained=yes"});
+    final api = client.factory({
+      "localRequest": "GET /health?source=origin&retained=yes",
+      "failureRequest": "GET /failure"
+    });
 
     final response = await api
         .localRequest({"source": "local", "added": "new"}, authenticate: false);
@@ -39,5 +48,11 @@ void main() {
       "path": "/health",
       "query": {"source": "local", "retained": "yes", "added": "new"}
     });
+
+    await expectLater(
+        api.failureRequest(null, authenticate: false),
+        throwsA(isA<HttpError>()
+            .having((error) => error.code, "code", 123)
+            .having((error) => error.message, "message", "diagnostic")));
   });
 }

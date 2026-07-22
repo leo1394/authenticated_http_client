@@ -1,3 +1,6 @@
+## 0.2.17
+- route resource mock responses through the same built-in response interceptor as real HTTP requests
+
 ## 0.2.16
 - support local ip base url  with port specified
 
